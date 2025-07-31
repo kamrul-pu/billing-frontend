@@ -1,8 +1,10 @@
+'use client';
+
 import { Fragment } from 'react'
 import { Disclosure, Menu, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter, usePathname } from 'next/navigation'
 import { authService } from '@/lib/api-services'
 import clsx from 'clsx'
 
@@ -15,6 +17,7 @@ const navigation = [
 
 export default function Navbar() {
   const router = useRouter()
+  const pathname = usePathname()
   const user = authService.getCurrentUser()
 
   const handleLogout = () => {
@@ -41,7 +44,7 @@ export default function Navbar() {
                         key={item.name}
                         href={item.href}
                         className={clsx(
-                          router.pathname === item.href
+                          pathname === item.href
                             ? 'bg-gray-900 text-white'
                             : 'text-gray-300 hover:bg-gray-700 hover:text-white',
                           'rounded-md px-3 py-2 text-sm font-medium'
@@ -125,7 +128,7 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   className={clsx(
-                    router.pathname === item.href
+                    pathname === item.href
                       ? 'bg-gray-900 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white',
                     'block rounded-md px-3 py-2 text-base font-medium'

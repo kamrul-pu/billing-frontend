@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react'
 import { customerService, packageService, paymentService } from '@/lib/api-services'
 import Layout from '@/components/layout/Layout'
