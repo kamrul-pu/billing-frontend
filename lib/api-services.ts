@@ -1,5 +1,5 @@
 import apiClient from './api-client';
-import { CustomerList, CustomerDetail, PaymentList, PackageList } from './types';
+import { CustomerList, CustomerDetail, Customer, PaymentList, PackageList, PackageDetail } from './types';
 
 // Auth services
 export const authService = {
@@ -49,7 +49,7 @@ export const customerService = {
     const response = await apiClient.get(`/customers?page=${page}&page_size=${pageSize}`);
     return response.data;
   },
-  getCustomer: async (uid: string) => {
+  getCustomer: async (uid: string): Promise<CustomerDetail> => {
     const response = await apiClient.get(`/customers/${uid}`);
     return response.data;
   },
