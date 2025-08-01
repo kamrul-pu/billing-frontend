@@ -76,124 +76,166 @@ export default function CustomerDetailPage({ params }: { params: { uid: string }
   }
 
   return (
-    <div className="py-6 px-4 sm:px-6 lg:px-8">
-      <div className="md:grid md:grid-cols-3 md:gap-6">
-        <div className="md:col-span-1">
-          <div className="px-4 sm:px-0">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">Customer Details</h3>
-            <p className="mt-1 text-sm text-gray-600">
+    <div className="min-h-screen bg-gray-50/50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Customer Details</h1>
+            <p className="mt-2 text-sm text-gray-600">
               Update customer information and package details.
             </p>
           </div>
+          <button
+            onClick={() => router.push('/customers')}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            Back to Customers
+          </button>
         </div>
-        <div className="mt-5 md:col-span-2 md:mt-0">
+
+        <div className="overflow-hidden rounded-xl bg-white shadow ring-1 ring-gray-900/10">
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="shadow sm:overflow-hidden sm:rounded-md">
-              <div className="space-y-6 bg-white px-4 py-5 sm:p-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    {...register('name', { required: 'Name is required' })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    {...register('phone', { required: 'Phone number is required' })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
-                  {errors.phone && (
-                    <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    {...register('email')}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Address
-                  </label>
-                  <textarea
-                    {...register('address', { required: 'Address is required' })}
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  />
-                  {errors.address && (
-                    <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="package" className="block text-sm font-medium text-gray-700">
-                    Internet Package
-                  </label>
-                  <select
-                    {...register('package_uid', { required: 'Package is required' })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  >
-                    <option value="">Select a package</option>
-                    {packages.map((pkg) => (
-                      <option key={pkg.uid} value={pkg.uid}>
-                        {pkg.name} - {pkg.speed_mbps}Mbps (৳{pkg.price})
-                      </option>
-                    ))}
-                  </select>
-                  {errors.package_uid && (
-                    <p className="mt-1 text-sm text-red-600">{errors.package_uid.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      {...register('is_active')}
-                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <label htmlFor="is_active" className="ml-2 block text-sm font-medium text-gray-700">
-                      Active Customer
+            <div className="p-8">
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium leading-6 text-gray-900">
+                      Full Name
                     </label>
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        {...register('name', { required: 'Name is required' })}
+                        className="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      />
+                      {errors.name && (
+                        <p className="mt-2 text-sm text-red-600">{errors.name.message}</p>
+                      )}
+                    </div>
                   </div>
-                  {errors.is_active && (
-                    <p className="mt-1 text-sm text-red-600">{errors.is_active.message}</p>
-                  )}
+
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium leading-6 text-gray-900">
+                      Phone Number
+                    </label>
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        {...register('phone', { required: 'Phone number is required' })}
+                        className="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      />
+                      {errors.phone && (
+                        <p className="mt-2 text-sm text-red-600">{errors.phone.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
+                      Email
+                    </label>
+                    <div className="mt-2">
+                      <input
+                        type="email"
+                        {...register('email')}
+                        className="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      />
+                      {errors.email && (
+                        <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="package" className="block text-sm font-medium leading-6 text-gray-900">
+                      Internet Package
+                    </label>
+                    <div className="mt-2">
+                      <select
+                        {...register('package_uid', { required: 'Package is required' })}
+                        className="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      >
+                        <option value="">Select a package</option>
+                        {packages.map((pkg) => (
+                          <option key={pkg.uid} value={pkg.uid}>
+                            {pkg.name} - {pkg.speed_mbps}Mbps (৳{pkg.price})
+                          </option>
+                        ))}
+                      </select>
+                      {errors.package_uid && (
+                        <p className="mt-2 text-sm text-red-600">{errors.package_uid.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium leading-6 text-gray-900">
+                      Address
+                    </label>
+                    <div className="mt-2">
+                      <textarea
+                        {...register('address', { required: 'Address is required' })}
+                        rows={3}
+                        className="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                      />
+                      {errors.address && (
+                        <p className="mt-2 text-sm text-red-600">{errors.address.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="relative flex items-start">
+                      <div className="flex h-6 items-center">
+                        <input
+                          type="checkbox"
+                          {...register('is_active')}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm leading-6">
+                        <label htmlFor="is_active" className="font-medium text-gray-900">
+                          Active Customer
+                        </label>
+                        <p className="text-gray-500">Customer will be able to access services</p>
+                      </div>
+                    </div>
+                    {errors.is_active && (
+                      <p className="mt-2 text-sm text-red-600">{errors.is_active.message}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {error && (
-                <div className="px-4 py-3 text-sm text-red-600">
-                  {error}
+                <div className="mt-6 rounded-md bg-red-50 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
+              <div className="mt-8 flex items-center justify-end gap-x-3">
+                <button
+                  type="button"
+                  onClick={() => router.push('/customers')}
+                  className="rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400"
+                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-indigo-400"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
