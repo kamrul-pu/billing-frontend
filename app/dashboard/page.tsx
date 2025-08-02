@@ -1,162 +1,429 @@
 'use client';
 
-import { useEffect, useState } from 'react'
-import { customerService, packageService, paymentService } from '@/lib/api-services'
-import Layout from '@/components/layout/Layout'
-import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline'
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Me, CustomerList, PaymentList, PackageList } from '@/lib/types';
+import { authService, customerService, paymentService, packageService } from '@/lib/api-services';
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<Me | null>(null);
+  const [customers, setCustomers] = useState<CustomerList[]>([]);
+  const [payments, setPayments] = useState<PaymentList[]>([]);
+  const [packages, setPackages] = useState<PackageList[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalCustomers: 0,
-    totalPackages: 0,
-    totalPayments: 0,
-    recentPayments: [],
-  })
+    totalRevenue: 0,
+    pendingPayments: 0,
+    activeCustomers: 0,
+    thisMonthPayments: 0
+  });
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [customers, packages, payments] = await Promise.all([
-          customerService.getCustomers(1, 1),
-          packageService.getPackages(1, 1),
-          paymentService.getPayments(1, 5),
-        ])
-
-        setStats({
-          totalCustomers: customers.count || 0,
-          totalPackages: packages.count || 0,
-          totalPayments: payments.count || 0,
-          recentPayments: payments.results || [],
-        })
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error)
+    const checkAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        router.push('/login');
+        return;
       }
-    }
 
-    fetchStats()
-  }, [])
+      try {
+        const userData = await authService.getMe();
+        setUser(userData);
+        
+        // Load data based on user role
+        if (userData.kind === 'CUSTOMER') {
+          // For customers, load their own data
+          // You might need to implement customer-specific endpoints
+        } else {
+          // For staff/admin, load all data
+          const [customersData, paymentsData, packagesData] = await Promise.all([
+            customerService.getCustomers(1, 10),
+            paymentService.getPayments(1, 10),
+            packageService.getPackages(1, 10)
+          ]);
+          
+          setCustomers(customersData.results);
+          setPayments(paymentsData.results);
+          setPackages(packagesData.results);
+
+          // Calculate statistics
+          const totalRevenue = paymentsData.results.reduce((sum, payment) => {
+            return sum + (payment.paid ? parseFloat(payment.amount || '0') : 0);
+          }, 0);
+
+          const pendingPayments = paymentsData.results.filter(payment => !payment.paid).length;
+          const activeCustomers = customersData.results.filter(customer => customer.is_active).length;
+          
+          const currentMonth = new Date().toLocaleString('en-US', { month: 'long' }).toUpperCase();
+          const thisMonthPayments = paymentsData.results.filter(payment => 
+            payment.billing_month === currentMonth
+          ).length;
+
+          setStats({
+            totalRevenue,
+            pendingPayments,
+            activeCustomers,
+            thisMonthPayments
+          });
+        }
+      } catch (error) {
+        console.error('Auth error:', error);
+        authService.logout();
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  const handleLogout = () => {
+    authService.logout();
+    router.push('/login');
+  };
+
+  const formatCurrency = (amount: string | number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(parseFloat(amount?.toString() || '0'));
+  };
+
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method) {
+      case 'CASH':
+        return '💵';
+      case 'BKASH':
+        return '📱';
+      case 'NAGAD':
+        return '📱';
+      case 'BANK_TRANSFER':
+        return '🏦';
+      case 'MOBILE_BANKING':
+        return '📱';
+      case 'ONLINE_PAYMENT':
+        return '💳';
+      case 'ROCKET':
+        return '📱';
+      default:
+        return '💰';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'STAFF'].includes(user.kind || '');
 
   return (
-    <Layout>
-      <div className="min-h-screen">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Stats cards */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ArrowUpIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Customers</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900">{stats.totalCustomers}</div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">M_Online Dashboard</h1>
             </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ArrowUpIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Packages</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900">{stats.totalPackages}</div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <ArrowDownIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Payments</dt>
-                    <dd>
-                      <div className="text-lg font-medium text-gray-900">{stats.totalPayments}</div>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Welcome, {user.first_name} {user.last_name}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
+      </header>
 
-        {/* Recent Payments */}
-        <div className="mt-8">
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Payments</h3>
-            </div>
-            <div className="flex flex-col">
-              <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-                  <div className="overflow-hidden border-t border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Customer
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Amount
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {stats.recentPayments.map((payment: any) => (
-                          <tr key={payment.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {payment.customer_name}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              ${payment.amount}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(payment.payment_date).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                payment.paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {payment.paid ? 'Paid' : 'Pending'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Role-based content */}
+        {isAdmin ? (
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Active Customers</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.activeCustomers}</dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
+                        <dd className="text-lg font-medium text-gray-900">{formatCurrency(stats.totalRevenue)}</dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Pending Payments</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.pendingPayments}</dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">This Month</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.thisMonthPayments}</dd>
+                      </dl>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Link
+                    href="/customers/new"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Add Customer
+                  </Link>
+                  <Link
+                    href="/payments"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                  >
+                    Record Payment
+                  </Link>
+                  <Link
+                    href="/packages"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    Manage Packages
+                  </Link>
+                  <Link
+                    href="/customers"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    View All Customers
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Payments */}
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Payments</h3>
+                  <Link
+                    href="/payments"
+                    className="text-sm text-indigo-600 hover:text-indigo-500"
+                  >
+                    View all payments →
+                  </Link>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {payments.map((payment) => (
+                        <tr key={payment.uid} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {payment.customer?.name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                            {formatCurrency(payment.amount || '0')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span className="flex items-center">
+                              <span className="mr-2">{getPaymentMethodIcon(payment.payment_method || '')}</span>
+                              {payment.payment_method?.replace('_', ' ') || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {payment.billing_month || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              payment.paid 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {payment.paid ? 'Paid' : 'Pending'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Customers */}
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Customers</h3>
+                  <Link
+                    href="/customers"
+                    className="text-sm text-indigo-600 hover:text-indigo-500"
+                  >
+                    View all customers →
+                  </Link>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connection</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {customers.map((customer) => (
+                        <tr key={customer.uid} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {customer.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {customer.phone}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>
+                              <div className="font-medium">{customer.package?.name || 'N/A'}</div>
+                              <div className="text-xs text-gray-400">
+                                {customer.package?.speed_mbps} Mbps - {formatCurrency(customer.package?.price || '0')}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>
+                              <div className="text-xs text-gray-400">IP: {customer.ip_address || 'N/A'}</div>
+                              <div className="text-xs text-gray-400">Type: {customer.connection_type || 'N/A'}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              customer.is_active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {customer.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex space-x-2">
+                              <Link
+                                href={`/customers/${customer.uid}`}
+                                className="text-indigo-600 hover:text-indigo-900"
+                              >
+                                View
+                              </Link>
+                              <Link
+                                href={`/customers/${customer.uid}/edit`}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                Edit
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Welcome to M_Online</h2>
+            <p className="text-gray-600">
+              This is your customer dashboard. Here you can view your billing information, 
+              payment history, and manage your account.
+            </p>
+            {/* Add customer-specific content here */}
+          </div>
+        )}
       </div>
-    </Layout>
-  )
+    </div>
+  );
 }

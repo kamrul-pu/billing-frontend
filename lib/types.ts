@@ -1,5 +1,16 @@
-// User types
-export interface UserBase {
+// Auth types (simplified)
+export interface LoginRequest {
+  phone: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: Me;
+}
+
+export interface Me {
   id?: number;
   uid?: string;
   first_name?: string;
@@ -8,114 +19,104 @@ export interface UserBase {
   email?: string;
   gender?: 'FEMALE' | 'MALE' | 'UNKNOWN';
   image?: string;
-}
-
-export interface UserList extends UserBase {
   kind?: 'ADMIN' | 'CUSTOMER' | 'MANAGER' | 'STAFF' | 'SUPER_ADMIN' | 'OTHER';
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface UserDetail extends UserList {
-  status?: 'ACTIVE' | 'DRAFT' | 'INACTIVE' | 'REMOVED';
-  is_staff?: boolean;
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+  access_token: string;
 }
 
 // Package types
 export interface PackageBase {
-  uid: string;
+  id?: number;
+  uid?: string;
   name: string;
+  speed_mbps?: number;
+  price?: string; // Decimal format from backend
   description?: string;
-  price: number;
-  speed_mbps: number;
-  created_at?: string;
-  updated_at?: string;
-  is_active?: boolean;
 }
 
-export interface PackageList extends PackageBase {
-  customer_count?: number;
-}
+export interface PackageList extends PackageBase {}
 
 export interface PackageDetail extends PackageBase {
-  is_active: boolean;
-  usage_stats?: {
-    total_customers: number;
-    active_customers: number;
-  };
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Customer types
 export interface CustomerBase {
-  uid: string;
+  id?: number;
+  uid?: string;
   name: string;
-  phone: string;
   email?: string;
-  address: string;
-  package_uid: string;
-  connection_start_date?: string;
-  ip_address?: string;
-  mac_address?: string;
-  username?: string;
-  connection_type?: 'DHCP' | 'STATIC' | 'PPPoE';
-  credentials?: Record<string, any>;
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
+  phone: string;
+  address?: string;
+  nid?: string;
 }
 
 export interface CustomerList extends CustomerBase {
-  package?: {
-    uid: string;
-    name: string;
-    speed_mbps: number;
-    price: number;
-  };
-  package_name?: string;
+  package?: PackageBase;
+  package_id?: number;
+  connection_start_date?: string;
+  is_active?: boolean;
+  ip_address?: string;
+  mac_address?: string;
+  username?: string;
+  password?: string;
+  connection_type?: 'DHCP' | 'STATIC' | 'PPPoE';
+  credentials?: Record<string, any>;
 }
 
-export interface Customer extends CustomerList {
-  package_details?: PackageDetail;
-  payment_history?: {
-    total_payments: number;
-    last_payment_date?: string;
-    last_payment_amount?: number;
+export interface CustomerDetail extends CustomerList {
+  user?: {
+    id?: number;
+    uid?: string;
+    first_name?: string;
+    last_name?: string;
+    phone: string;
+    email?: string;
+    kind?: 'ADMIN' | 'CUSTOMER' | 'MANAGER' | 'STAFF' | 'SUPER_ADMIN' | 'OTHER';
   };
-  user?: UserList;
-}
-
-export interface CustomerDetail extends Customer {
-  total_due?: number;
-  connection_details?: {
-    ip_address: string;
-    mac_address: string;
-    username: string;
-    password: string;
-    connection_type: 'DHCP' | 'STATIC' | 'PPPoE';
-  };
+  package: PackageBase;
+  connection_start_date?: string;
+  is_active?: boolean;
 }
 
 // Payment types
 export interface PaymentBase {
-  uid: string;
-  customer_uid: string;
-  amount: number;
-  billing_month: 'JANUARY' | 'FEBRUARY' | 'MARCH' | 'APRIL' | 'MAY' | 'JUNE' | 'JULY' | 'AUGUST' | 'SEPTEMBER' | 'OCTOBER' | 'NOVEMBER' | 'DECEMBER';
-  payment_method: 'BANK_TRANSFER' | 'BKASH' | 'CASH' | 'NAGAD' | 'MOBILE_BANKING' | 'ONLINE_PAYMENT' | 'ROCKET' | 'OTHER';
-  status: 'pending' | 'completed' | 'failed';
+  id?: number;
+  uid?: string;
+  customer?: CustomerBase;
+  entry_by?: {
+    id?: number;
+    uid?: string;
+    first_name?: string;
+    last_name?: string;
+    phone: string;
+    email?: string;
+  };
+  amount?: string; // Decimal format from backend
+  billing_month?: 'JANUARY' | 'FEBRUARY' | 'MARCH' | 'APRIL' | 'MAY' | 'JUNE' | 'JULY' | 'AUGUST' | 'SEPTEMBER' | 'OCTOBER' | 'NOVEMBER' | 'DECEMBER';
+  payment_method?: 'BANK_TRANSFER' | 'BKASH' | 'CASH' | 'NAGAD' | 'MOBILE_BANKING' | 'ONLINE_PAYMENT' | 'ROCKET' | 'OTHER';
+  paid?: boolean;
   transaction_id?: string;
-  payment_date: string;
+  payment_date?: string;
   note?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface PaymentList extends PaymentBase {
-  customer_name: string;
-  package_name: string;
+  customer_id?: number;
 }
 
-export interface PaymentDetail extends PaymentBase {
-  customer_details: CustomerBase;
-}
+export interface PaymentDetail extends PaymentBase {}
 
 // API Response types
 export interface PaginatedResponse<T> {
