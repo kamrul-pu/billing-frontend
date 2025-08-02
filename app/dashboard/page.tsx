@@ -16,7 +16,10 @@ export default function DashboardPage() {
     totalRevenue: 0,
     pendingPayments: 0,
     activeCustomers: 0,
-    thisMonthPayments: 0
+    thisMonthPayments: 0,
+    totalCustomers: 0,
+    totalPayments: 0,
+    totalPackages: 0
   });
   const router = useRouter();
 
@@ -40,7 +43,7 @@ export default function DashboardPage() {
           // For staff/admin, load all data
           const [customersData, paymentsData, packagesData] = await Promise.all([
             customerService.getCustomers(1, 10),
-            paymentService.getPayments(1, 10),
+            paymentService.getPayments(1, 50), // Get more payments for better stats
             packageService.getPackages(1, 10)
           ]);
           
@@ -48,7 +51,7 @@ export default function DashboardPage() {
           setPayments(paymentsData.results);
           setPackages(packagesData.results);
 
-          // Calculate statistics
+          // Calculate statistics using proper counts and comprehensive data
           const totalRevenue = paymentsData.results.reduce((sum, payment) => {
             return sum + (payment.paid ? parseFloat(payment.amount || '0') : 0);
           }, 0);
@@ -65,7 +68,10 @@ export default function DashboardPage() {
             totalRevenue,
             pendingPayments,
             activeCustomers,
-            thisMonthPayments
+            thisMonthPayments,
+            totalCustomers: customersData.count,
+            totalPayments: paymentsData.count,
+            totalPackages: packagesData.count
           });
         }
       } catch (error) {
@@ -125,7 +131,15 @@ export default function DashboardPage() {
     return null;
   }
 
-  const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'STAFF'].includes(user.kind || '');
+  const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'STAFF', 'OTHER'].includes(user.kind || '');
+
+  // Debug: Log user information
+  console.log('User kind:', user.kind);
+  console.log('Is admin:', isAdmin);
+  console.log('User data:', user);
+
+  // Temporary: Force admin view for testing
+  const showAdminDashboard = true; // Change this to isAdmin when ready
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -153,7 +167,7 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Role-based content */}
-        {isAdmin ? (
+        {showAdminDashboard ? (
           <div className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -169,8 +183,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Active Customers</dt>
-                        <dd className="text-lg font-medium text-gray-900">{stats.activeCustomers}</dd>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Total Customers</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.totalCustomers}</dd>
                       </dl>
                     </div>
                   </div>
@@ -209,8 +223,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Pending Payments</dt>
-                        <dd className="text-lg font-medium text-gray-900">{stats.pendingPayments}</dd>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Total Payments</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.totalPayments}</dd>
                       </dl>
                     </div>
                   </div>
@@ -229,7 +243,70 @@ export default function DashboardPage() {
                     </div>
                     <div className="ml-5 w-0 flex-1">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">This Month</dt>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Active Packages</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.totalPackages}</dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Active Customers</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.activeCustomers}</dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Pending Payments</dt>
+                        <dd className="text-lg font-medium text-gray-900">{stats.pendingPayments}</dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-teal-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">This Month Payments</dt>
                         <dd className="text-lg font-medium text-gray-900">{stats.thisMonthPayments}</dd>
                       </dl>
                     </div>
