@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PackageDetail } from '@/lib/types';
@@ -100,10 +100,10 @@ export default function EditPackagePage() {
       });
       
       router.push('/packages');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating package:', error);
-      if (error.response?.data) {
-        const serverErrors = error.response.data;
+      if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
+        const serverErrors = error.response.data as Record<string, string>;
         setErrors(serverErrors);
       } else {
         alert('Failed to update package. Please try again.');

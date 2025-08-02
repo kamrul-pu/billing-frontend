@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { CustomerList, PackageList } from '@/lib/types';
 import { customerService, packageService } from '@/lib/api-services';
 
@@ -16,11 +15,10 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize] = useState(10);
-  const router = useRouter();
 
   useEffect(() => {
     fetchData();
-  }, [currentPage]);
+  }, [currentPage, pageSize]);
 
   const fetchData = async () => {
     try {
@@ -33,7 +31,7 @@ export default function CustomersPage() {
       setCustomers(customersData.results);
       setTotalCount(customersData.count);
       setPackages(packagesData.results);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
@@ -45,10 +43,10 @@ export default function CustomersPage() {
       try {
         await customerService.deleteCustomer(uid);
         fetchData(); // Refresh the list
-      } catch (error) {
-        console.error('Error deleting customer:', error);
-        alert('Failed to delete customer. It may have associated payments or other dependencies.');
-      }
+          } catch (error: unknown) {
+      console.error('Error deleting customer:', error);
+      alert('Failed to delete customer. It may have associated payments or other dependencies.');
+    }
     }
   };
 

@@ -71,10 +71,10 @@ export default function NewPackagePage() {
       });
       
       router.push('/packages');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating package:', error);
-      if (error.response?.data) {
-        const serverErrors = error.response.data;
+      if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
+        const serverErrors = error.response.data as Record<string, string>;
         setErrors(serverErrors);
       } else {
         alert('Failed to create package. Please try again.');

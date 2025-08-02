@@ -42,7 +42,9 @@ export interface PackageBase {
   description?: string;
 }
 
-export interface PackageList extends PackageBase {}
+export interface PackageList extends PackageBase {
+  // PackageList inherits all properties from PackageBase
+}
 
 export interface PackageDetail extends PackageBase {
   created_at?: string;
@@ -70,7 +72,7 @@ export interface CustomerList extends CustomerBase {
   username?: string;
   password?: string;
   connection_type?: 'DHCP' | 'STATIC' | 'PPPoE';
-  credentials?: Record<string, any>;
+  credentials?: Record<string, unknown>;
 }
 
 export interface CustomerDetail extends CustomerList {
@@ -117,7 +119,9 @@ export interface PaymentList extends PaymentBase {
   customer_id?: number;
 }
 
-export interface PaymentDetail extends PaymentBase {}
+export interface PaymentDetail extends PaymentBase {
+  // PaymentDetail inherits all properties from PaymentBase
+}
 
 // API Response types
 export interface PaginatedResponse<T> {

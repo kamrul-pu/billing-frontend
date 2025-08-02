@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { PackageList } from '@/lib/types';
 import { packageService } from '@/lib/api-services';
 
@@ -13,11 +12,10 @@ export default function PackagesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize] = useState(10);
-  const router = useRouter();
 
   useEffect(() => {
     fetchPackages();
-  }, [currentPage]);
+  }, [currentPage, pageSize]);
 
   const fetchPackages = async () => {
     try {
@@ -25,7 +23,7 @@ export default function PackagesPage() {
       const response = await packageService.getPackages(currentPage, pageSize);
       setPackages(response.results);
       setTotalCount(response.count);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching packages:', error);
     } finally {
       setLoading(false);
@@ -37,7 +35,7 @@ export default function PackagesPage() {
       try {
         await packageService.deletePackage(uid);
         fetchPackages(); // Refresh the list
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error deleting package:', error);
         alert('Failed to delete package. It may be in use by customers.');
       }

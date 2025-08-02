@@ -129,14 +129,9 @@ export default function NewCustomerPage() {
       });
       
       router.push('/customers');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating customer:', error);
-      if (error.response?.data) {
-        const serverErrors = error.response.data;
-        setErrors(serverErrors);
-      } else {
-        alert('Failed to create customer. Please try again.');
-      }
+      alert('Failed to create customer. Please try again.');
     } finally {
       setLoading(false);
     }
