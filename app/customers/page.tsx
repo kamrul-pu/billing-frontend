@@ -15,7 +15,7 @@ export default function CustomersPage() {
   const [packageFilter, setPackageFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(30);
   const router = useRouter();
 
   useEffect(() => {
@@ -269,12 +269,12 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        {/* <Link
+                        <Link
                           href={`/customers/${customer.uid}`}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
                           View
-                        </Link> */}
+                        </Link>
                         <Link
                           href={`/customers/${customer.uid}/edit`}
                           className="text-green-600 hover:text-green-900"
