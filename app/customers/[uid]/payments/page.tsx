@@ -13,6 +13,8 @@ export default function CustomerPaymentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');
+  const [billingMonthFilter, setBillingMonthFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(20);
@@ -89,7 +91,7 @@ export default function CustomerPaymentsPage() {
     const matchesSearch = 
       payment.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.billing_month.toLowerCase().includes(searchTerm.toLowerCase());
+      payment.billing_month?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = 
       statusFilter === 'all' || 
@@ -100,8 +102,33 @@ export default function CustomerPaymentsPage() {
       methodFilter === 'all' || 
       payment.payment_method === methodFilter;
 
-    return matchesSearch && matchesStatus && matchesMethod;
+    const matchesBillingMonth = 
+      billingMonthFilter === 'all' || 
+      payment.billing_month === billingMonthFilter;
+
+    const matchesDate = 
+      !dateFilter || 
+      (payment.payment_date && payment.payment_date.startsWith(dateFilter));
+
+    return matchesSearch && matchesStatus && matchesMethod && matchesBillingMonth && matchesDate;
   });
+
+  // Calculate totals for filtered payments
+  const totalAmount = filteredPayments.reduce((sum, payment) => {
+    return sum + parseFloat(payment.amount?.toString() || '0');
+  }, 0);
+
+  const paidAmount = filteredPayments
+    .filter(payment => payment.paid)
+    .reduce((sum, payment) => {
+      return sum + parseFloat(payment.amount?.toString() || '0');
+    }, 0);
+
+  const pendingAmount = filteredPayments
+    .filter(payment => !payment.paid)
+    .reduce((sum, payment) => {
+      return sum + parseFloat(payment.amount?.toString() || '0');
+    }, 0);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -179,7 +206,7 @@ export default function CustomerPaymentsPage() {
         {/* Search and Filters */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               {/* Search */}
               <div className="md:col-span-2">
                 <label htmlFor="search" className="sr-only">Search payments</label>
@@ -239,8 +266,71 @@ export default function CustomerPaymentsPage() {
                   <option value="OTHER">Other</option>
                 </select>
               </div>
+
+              {/* Billing Month Filter */}
+              <div>
+                <label htmlFor="billingMonth" className="block text-sm font-medium text-gray-700 mb-1">
+                  Billing Month
+                </label>
+                <select
+                  id="billingMonth"
+                  value={billingMonthFilter}
+                  onChange={(e) => setBillingMonthFilter(e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="all">All Months</option>
+                  <option value="JANUARY">January</option>
+                  <option value="FEBRUARY">February</option>
+                  <option value="MARCH">March</option>
+                  <option value="APRIL">April</option>
+                  <option value="MAY">May</option>
+                  <option value="JUNE">June</option>
+                  <option value="JULY">July</option>
+                  <option value="AUGUST">August</option>
+                  <option value="SEPTEMBER">September</option>
+                  <option value="OCTOBER">October</option>
+                  <option value="NOVEMBER">November</option>
+                  <option value="DECEMBER">December</option>
+                </select>
+              </div>
+
+              {/* Date Filter */}
+              <div>
+                <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Date
+                </label>
+                <input
+                  type="date"
+                  id="dateFilter"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
             </div>
             
+            {/* Totals Section */}
+            <div className="mt-6 bg-gray-50 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{filteredPayments.length}</div>
+                  <div className="text-sm text-gray-500">Total Payments</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{formatCurrency(totalAmount)}</div>
+                  <div className="text-sm text-gray-500">Total Amount</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{formatCurrency(paidAmount)}</div>
+                  <div className="text-sm text-gray-500">Paid Amount</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{formatCurrency(pendingAmount)}</div>
+                  <div className="text-sm text-gray-500">Pending Amount</div>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-4 flex justify-between items-center">
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
@@ -272,6 +362,8 @@ export default function CustomerPaymentsPage() {
                     setSearchTerm('');
                     setStatusFilter('all');
                     setMethodFilter('all');
+                    setBillingMonthFilter('all');
+                    setDateFilter('');
                   }}
                   className="text-sm text-indigo-600 hover:text-indigo-500"
                 >
