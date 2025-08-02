@@ -11,7 +11,7 @@ export default function PackagesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
 
   useEffect(() => {
     fetchPackages();
@@ -109,10 +109,29 @@ export default function PackagesPage() {
                   />
                 </div>
               </div>
-              <div className="mt-4 sm:mt-0 sm:ml-4">
+              <div className="mt-4 sm:mt-0 sm:ml-4 flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
                   Showing {packages.length} of {totalCount} packages
                 </span>
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="perPage" className="text-sm text-gray-500">
+                    Per page:
+                  </label>
+                  <select
+                    id="perPage"
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1); // Reset to first page when changing page size
+                    }}
+                    className="block border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -217,6 +236,7 @@ export default function PackagesPage() {
                     Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{' '}
                     <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> of{' '}
                     <span className="font-medium">{totalCount}</span> results
+                    <span className="text-gray-500 ml-2">({pageSize} per page)</span>
                   </p>
                 </div>
                 <div>

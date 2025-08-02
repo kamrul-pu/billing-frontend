@@ -20,7 +20,8 @@ export default function NewCustomerPage() {
     username: '',
     password: '',
     connection_type: 'DHCP' as 'DHCP' | 'STATIC' | 'PPPoE',
-    credentials: ''
+    credentials: '',
+    is_active: true
   });
   const [loading, setLoading] = useState(false);
   const [packagesLoading, setPackagesLoading] = useState(true);
@@ -125,7 +126,8 @@ export default function NewCustomerPage() {
         username: formData.username.trim(),
         password: formData.password.trim(),
         connection_type: formData.connection_type,
-        credentials: formData.credentials ? JSON.parse(formData.credentials) : undefined
+        credentials: formData.credentials ? JSON.parse(formData.credentials) : undefined,
+        is_active: formData.is_active
       });
       
       router.push('/customers');
@@ -449,8 +451,36 @@ export default function NewCustomerPage() {
                        <p className="mt-1 text-sm text-red-600">{errors.credentials}</p>
                      )}
                    </div>
-                 </div>
-               </div>
+                                 </div>
+              </div>
+
+              {/* Customer Status */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Status</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700">Account Status</h4>
+                      <p className="text-sm text-gray-500">Enable or disable this customer's account</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="is_active"
+                          checked={formData.is_active}
+                          onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-900">
+                          {formData.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Form Actions */}
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

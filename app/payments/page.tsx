@@ -2,16 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CustomerList, PackageList } from '@/lib/types';
-import { customerService, packageService } from '@/lib/api-services';
+import { PaymentList } from '@/lib/types';
+import { paymentService } from '@/lib/api-services';
 
-export default function CustomersPage() {
-  const [customers, setCustomers] = useState<CustomerList[]>([]);
-  const [packages, setPackages] = useState<PackageList[]>([]);
+export default function PaymentsPage() {
+  const [payments, setPayments] = useState<PaymentList[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [packageFilter, setPackageFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [methodFilter, setMethodFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(20);
@@ -23,30 +22,25 @@ export default function CustomersPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [customersData, packagesData] = await Promise.all([
-        customerService.getCustomers(currentPage, pageSize),
-        packageService.getPackages(1, 100) // Get all packages for filter
-      ]);
-      
-      setCustomers(customersData.results);
-      setTotalCount(customersData.count);
-      setPackages(packagesData.results);
+      const response = await paymentService.getPayments(currentPage, pageSize);
+      setPayments(response.results);
+      setTotalCount(response.count);
     } catch (error: unknown) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching payments:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (uid: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete customer "${name}"? This action cannot be undone.`)) {
+  const handleDelete = async (uid: string, customerName: string) => {
+    if (window.confirm(`Are you sure you want to delete payment for "${customerName}"? This action cannot be undone.`)) {
       try {
-        await customerService.deleteCustomer(uid);
+        await paymentService.deletePayment(uid);
         fetchData(); // Refresh the list
-          } catch (error: unknown) {
-      console.error('Error deleting customer:', error);
-      alert('Failed to delete customer. It may have associated payments or other dependencies.');
-    }
+      } catch (error: unknown) {
+        console.error('Error deleting payment:', error);
+        alert('Failed to delete payment. Please try again.');
+      }
     }
   };
 
@@ -57,23 +51,45 @@ export default function CustomersPage() {
     }).format(parseFloat(amount?.toString() || '0'));
   };
 
-  const filteredCustomers = customers.filter(customer => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getPaymentMethodColor = (method: string) => {
+    const colors: Record<string, string> = {
+      'CASH': 'bg-green-100 text-green-800',
+      'BKASH': 'bg-blue-100 text-blue-800',
+      'NAGAD': 'bg-purple-100 text-purple-800',
+      'BANK_TRANSFER': 'bg-indigo-100 text-indigo-800',
+      'MOBILE_BANKING': 'bg-teal-100 text-teal-800',
+      'ONLINE_PAYMENT': 'bg-orange-100 text-orange-800',
+      'ROCKET': 'bg-pink-100 text-pink-800',
+      'OTHER': 'bg-gray-100 text-gray-800'
+    };
+    return colors[method] || 'bg-gray-100 text-gray-800';
+  };
+
+  const filteredPayments = payments.filter(payment => {
     const matchesSearch = 
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.address?.toLowerCase().includes(searchTerm.toLowerCase());
+      payment.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.customer?.phone.includes(searchTerm) ||
+      payment.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.note?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = 
       statusFilter === 'all' || 
-      (statusFilter === 'active' && customer.is_active) ||
-      (statusFilter === 'inactive' && !customer.is_active);
+      (statusFilter === 'paid' && payment.paid) ||
+      (statusFilter === 'pending' && !payment.paid);
 
-    const matchesPackage = 
-      packageFilter === 'all' || 
-      customer.package?.uid === packageFilter;
+    const matchesMethod = 
+      methodFilter === 'all' || 
+      payment.payment_method === methodFilter;
 
-    return matchesSearch && matchesStatus && matchesPackage;
+    return matchesSearch && matchesStatus && matchesMethod;
   });
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -96,13 +112,13 @@ export default function CustomersPage() {
               <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 mr-4">
                 ← Back to Dashboard
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900">Manage Customers</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Manage Payments</h1>
             </div>
             <Link
-              href="/customers/new"
+              href="/payments/new"
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
             >
-              Add New Customer
+              Add New Payment
             </Link>
           </div>
         </div>
@@ -115,7 +131,7 @@ export default function CustomersPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Search */}
               <div className="md:col-span-2">
-                <label htmlFor="search" className="sr-only">Search customers</label>
+                <label htmlFor="search" className="sr-only">Search payments</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +141,7 @@ export default function CustomersPage() {
                   <input
                     id="search"
                     type="text"
-                    placeholder="Search by name, phone, email, or address..."
+                    placeholder="Search by customer name, phone, transaction ID, or notes..."
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 !text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -141,32 +157,35 @@ export default function CustomersPage() {
                 <select
                   id="status"
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'paid' | 'pending')}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="paid">Paid</option>
+                  <option value="pending">Pending</option>
                 </select>
               </div>
 
-              {/* Package Filter */}
+              {/* Payment Method Filter */}
               <div>
-                <label htmlFor="package" className="block text-sm font-medium text-gray-700 mb-1">
-                  Package
+                <label htmlFor="method" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
                 </label>
                 <select
-                  id="package"
-                  value={packageFilter}
-                  onChange={(e) => setPackageFilter(e.target.value)}
+                  id="method"
+                  value={methodFilter}
+                  onChange={(e) => setMethodFilter(e.target.value)}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 >
-                  <option value="all">All Packages</option>
-                  {packages.map((pkg) => (
-                    <option key={pkg.uid} value={pkg.uid}>
-                      {pkg.name}
-                    </option>
-                  ))}
+                  <option value="all">All Methods</option>
+                  <option value="CASH">Cash</option>
+                  <option value="BKASH">bKash</option>
+                  <option value="NAGAD">Nagad</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="MOBILE_BANKING">Mobile Banking</option>
+                  <option value="ONLINE_PAYMENT">Online Payment</option>
+                  <option value="ROCKET">Rocket</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
             </div>
@@ -174,7 +193,7 @@ export default function CustomersPage() {
             <div className="mt-4 flex justify-between items-center">
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
-                  Showing {filteredCustomers.length} of {totalCount} customers
+                  Showing {filteredPayments.length} of {totalCount} payments
                 </span>
                 <div className="flex items-center space-x-2">
                   <label htmlFor="perPage" className="text-sm text-gray-500">
@@ -201,7 +220,7 @@ export default function CustomersPage() {
                   onClick={() => {
                     setSearchTerm('');
                     setStatusFilter('all');
-                    setPackageFilter('all');
+                    setMethodFilter('all');
                   }}
                   className="text-sm text-indigo-600 hover:text-indigo-500"
                 >
@@ -212,7 +231,7 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        {/* Customers Table */}
+        {/* Payments Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -222,16 +241,16 @@ export default function CustomersPage() {
                     Customer
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
+                    Payment Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Package
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Connection
+                    Amount
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -239,69 +258,62 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCustomers.map((customer) => (
-                  <tr key={customer.uid} className="hover:bg-gray-50">
+                {filteredPayments.map((payment) => (
+                  <tr key={payment.uid} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                        <div className="text-sm text-gray-500">ID: #{customer.id}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">{customer.phone}</div>
-                        {customer.email && (
-                          <div className="text-sm text-gray-500">{customer.email}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {customer.package?.name || 'No Package'}
-                        </div>
-                        {customer.package && (
-                          <div className="text-sm text-gray-500">
-                            {customer.package.speed_mbps} Mbps - {formatCurrency(customer.package.price || '0')}
-                          </div>
-                        )}
+                        <div className="text-sm font-medium text-gray-900">{payment.customer?.name}</div>
+                        <div className="text-sm text-gray-500">{payment.customer?.phone}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm text-gray-900">
-                          {customer.connection_type || 'N/A'}
+                          {payment.billing_month} {new Date().getFullYear()}
                         </div>
-                        {customer.ip_address && (
-                          <div className="text-sm text-gray-500">IP: {customer.ip_address}</div>
+                        <div className="text-sm text-gray-500">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(payment.payment_method || 'OTHER')}`}>
+                            {payment.payment_method?.replace('_', ' ')}
+                          </span>
+                        </div>
+                        {payment.transaction_id && (
+                          <div className="text-xs text-gray-400">ID: {payment.transaction_id}</div>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatCurrency(payment.amount || '0')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        customer.is_active 
+                        payment.paid 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {customer.is_active ? 'Active' : 'Inactive'}
+                        {payment.paid ? 'Paid' : 'Pending'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {payment.payment_date ? formatDate(payment.payment_date) : 'Not set'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <Link
-                          href={`/customers/${customer.uid}`}
+                          href={`/payments/${payment.uid}`}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
                           View
                         </Link>
                         <Link
-                          href={`/customers/${customer.uid}/edit`}
+                          href={`/payments/${payment.uid}/edit`}
                           className="text-green-600 hover:text-green-900"
                         >
                           Edit
                         </Link>
                         <button
-                          onClick={() => handleDelete(customer.uid!, customer.name)}
+                          onClick={() => handleDelete(payment.uid!, payment.customer?.name || 'Unknown')}
                           className="text-red-600 hover:text-red-900"
                         >
                           Delete
@@ -315,23 +327,23 @@ export default function CustomersPage() {
           </div>
 
           {/* Empty State */}
-          {filteredCustomers.length === 0 && !loading && (
+          {filteredPayments.length === 0 && !loading && (
             <div className="text-center py-12">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || statusFilter !== 'all' || packageFilter !== 'all' 
+                {searchTerm || statusFilter !== 'all' || methodFilter !== 'all' 
                   ? 'Try adjusting your search or filter criteria.' 
-                  : 'Get started by creating a new customer.'}
+                  : 'Get started by creating a new payment.'}
               </p>
               <div className="mt-6">
                 <Link
-                  href="/customers/new"
+                  href="/payments/new"
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
                 >
-                  Add Customer
+                  Add Payment
                 </Link>
               </div>
             </div>
@@ -405,4 +417,4 @@ export default function CustomersPage() {
       </div>
     </div>
   );
-}
+} 

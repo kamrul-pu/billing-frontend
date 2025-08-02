@@ -21,7 +21,8 @@ export default function EditCustomerPage() {
     username: '',
     password: '',
     connection_type: 'DHCP' as 'DHCP' | 'STATIC' | 'PPPoE',
-    credentials: ''
+    credentials: '',
+    is_active: true
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,7 +58,8 @@ export default function EditCustomerPage() {
         username: customerResponse.username || '',
         password: customerResponse.password || '',
         connection_type: customerResponse.connection_type || 'DHCP',
-        credentials: customerResponse.credentials ? JSON.stringify(customerResponse.credentials, null, 2) : ''
+        credentials: customerResponse.credentials ? JSON.stringify(customerResponse.credentials, null, 2) : '',
+        is_active: customerResponse.is_active ?? true
       });
     } catch {
       console.error('Error fetching data');
@@ -155,7 +157,8 @@ export default function EditCustomerPage() {
         username: formData.username.trim(),
         password: formData.password.trim(),
         connection_type: formData.connection_type,
-        credentials: formData.credentials ? JSON.parse(formData.credentials) : undefined
+        credentials: formData.credentials ? JSON.parse(formData.credentials) : undefined,
+        is_active: formData.is_active
       });
       
       router.push('/customers');
@@ -508,6 +511,34 @@ export default function EditCustomerPage() {
                 </div>
               </div>
 
+              {/* Customer Status */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Status</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700">Account Status</h4>
+                      <p className="text-sm text-gray-500">Enable or disable this customer's account</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="is_active"
+                          checked={formData.is_active}
+                          onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-900">
+                          {formData.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Customer Info */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-3">Customer Information</h3>
@@ -515,16 +546,6 @@ export default function EditCustomerPage() {
                   <div>
                     <span className="text-gray-500">Customer ID:</span>
                     <span className="ml-2 font-medium text-gray-900">#{customerData.id}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Status:</span>
-                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      customerData.is_active 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {customerData.is_active ? 'Active' : 'Inactive'}
-                    </span>
                   </div>
                   <div>
                     <span className="text-gray-500">Connection Start:</span>
