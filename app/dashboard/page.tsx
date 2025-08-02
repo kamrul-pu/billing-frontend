@@ -43,7 +43,7 @@ export default function DashboardPage() {
           // For staff/admin, load all data
           const [customersData, paymentsData, packagesData] = await Promise.all([
             customerService.getCustomers(1, 10),
-            paymentService.getPayments(1, 50), // Get more payments for better stats
+            paymentService.getPayments(1, 30), // Get more payments for better stats
             packageService.getPackages(1, 10)
           ]);
           
