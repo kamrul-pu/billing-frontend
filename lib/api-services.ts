@@ -30,10 +30,6 @@ export const authService = {
     const response = await apiClient.get('/users/me');
     return response.data;
   },
-  // getCurrentUser: () => {
-  //   return localStorage.getItem('user');
-  // },
-
 
   logout: () => {
     localStorage.removeItem('accessToken');

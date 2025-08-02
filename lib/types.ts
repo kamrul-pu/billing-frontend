@@ -63,7 +63,6 @@ export interface CustomerBase {
 export interface CustomerList extends CustomerBase {
   package?: PackageBase;
   package_id?: number;
-  package_uid?: string;
   connection_start_date?: string;
   is_active?: boolean;
   ip_address?: string;
@@ -85,6 +84,7 @@ export interface CustomerDetail extends CustomerList {
     kind?: 'ADMIN' | 'CUSTOMER' | 'MANAGER' | 'STAFF' | 'SUPER_ADMIN' | 'OTHER';
   };
   package: PackageBase;
+  package_uid?: string;
   connection_start_date?: string;
   is_active?: boolean;
 }

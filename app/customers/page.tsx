@@ -15,7 +15,7 @@ export default function CustomersPage() {
   const [packageFilter, setPackageFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize] = useState(30);
+  const [pageSize] = useState(10);
   const router = useRouter();
 
   useEffect(() => {
