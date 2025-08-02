@@ -243,7 +243,7 @@ export default function CustomersPage() {
                         </div>
                         {customer.package && (
                           <div className="text-sm text-gray-500">
-                            {customer.package.speed_mbps} Mbps - {formatCurrency(customer.package.price)}
+                            {customer.package.speed_mbps} Mbps - {formatCurrency(customer.package.price || '0')}
                           </div>
                         )}
                       </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { customerService, packageService } from '@/lib/api-services';
-import { Customer, PackageList } from '@/lib/types';
+import { CustomerList, PackageList } from '@/lib/types';
 
 type CustomerForm = {
   name: string;
@@ -17,7 +17,7 @@ type CustomerForm = {
 
 export default function CustomerDetailPage({ params }: { params: { uid: string } }) {
   const router = useRouter();
-  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [customer, setCustomer] = useState<CustomerList | null>(null);
   const [packages, setPackages] = useState<PackageList[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
