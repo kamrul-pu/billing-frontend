@@ -1,4 +1,4 @@
-// Auth types (simplified)
+// Auth types
 export interface LoginRequest {
   phone: string;
   password: string;
@@ -32,6 +32,37 @@ export interface RefreshTokenResponse {
   access_token: string;
 }
 
+// User types
+export interface UserLite {
+  id?: number;
+  uid?: string;
+  first_name?: string;
+  last_name?: string;
+  phone: string;
+  email?: string;
+}
+
+export interface UserList extends UserLite {
+  gender?: 'FEMALE' | 'MALE' | 'UNKNOWN';
+  kind?: 'ADMIN' | 'CUSTOMER' | 'MANAGER' | 'STAFF' | 'SUPER_ADMIN' | 'OTHER';
+  image?: string;
+}
+
+export interface UserDetail extends UserList {
+  status?: 'ACTIVE' | 'DRAFT' | 'INACTIVE' | 'REMOVED';
+  is_staff?: boolean;
+}
+
+export interface UserRegistration {
+  first_name?: string;
+  last_name?: string;
+  phone: string;
+  email?: string;
+  gender?: 'FEMALE' | 'MALE' | 'UNKNOWN';
+  password: string;
+  confirm_password: string;
+}
+
 // Package types
 export interface PackageBase {
   id?: number;
@@ -43,8 +74,6 @@ export interface PackageBase {
 }
 
 export interface PackageList extends PackageBase {
-  // PackageList inherits all properties from PackageBase
-  // No additional properties needed
   _extends?: never; // TypeScript hack to make interface non-empty
 }
 
@@ -78,15 +107,7 @@ export interface CustomerList extends CustomerBase {
 }
 
 export interface CustomerDetail extends CustomerList {
-  user?: {
-    id?: number;
-    uid?: string;
-    first_name?: string;
-    last_name?: string;
-    phone: string;
-    email?: string;
-    kind?: 'ADMIN' | 'CUSTOMER' | 'MANAGER' | 'STAFF' | 'SUPER_ADMIN' | 'OTHER';
-  };
+  user?: UserList;
   package: PackageBase;
   package_uid?: string;
   connection_start_date?: string;
@@ -98,14 +119,8 @@ export interface PaymentBase {
   id?: number;
   uid?: string;
   customer?: CustomerBase;
-  entry_by?: {
-    id?: number;
-    uid?: string;
-    first_name?: string;
-    last_name?: string;
-    phone: string;
-    email?: string;
-  };
+  entry_by?: UserLite;
+  bill_amount?: string; // Total bill amount for the payment
   amount?: string; // Decimal format from backend
   billing_month?: 'JANUARY' | 'FEBRUARY' | 'MARCH' | 'APRIL' | 'MAY' | 'JUNE' | 'JULY' | 'AUGUST' | 'SEPTEMBER' | 'OCTOBER' | 'NOVEMBER' | 'DECEMBER';
   payment_method?: 'BANK_TRANSFER' | 'BKASH' | 'CASH' | 'NAGAD' | 'MOBILE_BANKING' | 'ONLINE_PAYMENT' | 'ROCKET' | 'OTHER';
@@ -122,8 +137,6 @@ export interface PaymentList extends PaymentBase {
 }
 
 export interface PaymentDetail extends PaymentBase {
-  // PaymentDetail inherits all properties from PaymentBase
-  // No additional properties needed
   _extends?: never; // TypeScript hack to make interface non-empty
 }
 

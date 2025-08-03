@@ -9,22 +9,43 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerList[]>([]);
   const [packages, setPackages] = useState<PackageList[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [packageFilter, setPackageFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize] = useState(20);
+  
+  // Filter states
+  const [nameFilter, setNameFilter] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
+  const [packageFilter, setPackageFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  
+  // Applied filters (what's actually being used for search)
+  const [appliedFilters, setAppliedFilters] = useState({
+    name: '',
+    phone: '',
+    package_id: 'all' as string | number
+  });
 
-    useEffect(() => {
+  useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, appliedFilters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
       setLoading(true);
+      
+      // Build filters object from applied filters
+      const filters: {
+        name?: string;
+        phone?: string;
+        package_id?: number;
+      } = {};
+      if (appliedFilters.name.trim()) filters.name = appliedFilters.name.trim();
+      if (appliedFilters.phone.trim()) filters.phone = appliedFilters.phone.trim();
+      if (appliedFilters.package_id !== 'all') filters.package_id = parseInt(appliedFilters.package_id as string);
+      
       const [customersData, packagesData] = await Promise.all([
-        customerService.getCustomers(currentPage, pageSize),
+        customerService.getCustomers(currentPage, pageSize, filters),
         packageService.getPackages(1, 100) // Get all packages for filter
       ]);
       
@@ -43,10 +64,10 @@ export default function CustomersPage() {
       try {
         await customerService.deleteCustomer(uid);
         fetchData(); // Refresh the list
-          } catch (error: unknown) {
-      console.error('Error deleting customer:', error);
-      alert('Failed to delete customer. It may have associated payments or other dependencies.');
-    }
+      } catch (error: unknown) {
+        console.error('Error deleting customer:', error);
+        alert('Failed to delete customer. It may have associated payments or other dependencies.');
+      }
     }
   };
 
@@ -57,24 +78,51 @@ export default function CustomersPage() {
     }).format(parseFloat(amount?.toString() || '0'));
   };
 
+  // Client-side filtering for status (since backend doesn't support it)
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = 
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.address?.toLowerCase().includes(searchTerm.toLowerCase());
-
     const matchesStatus = 
       statusFilter === 'all' || 
       (statusFilter === 'active' && customer.is_active) ||
       (statusFilter === 'inactive' && !customer.is_active);
 
-    const matchesPackage = 
-      packageFilter === 'all' || 
-      customer.package?.uid === packageFilter;
-
-    return matchesSearch && matchesStatus && matchesPackage;
+    return matchesStatus;
   });
+
+  const handleSearch = () => {
+    setAppliedFilters({
+      name: nameFilter,
+      phone: phoneFilter,
+      package_id: packageFilter
+    });
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleClearFilters = () => {
+    setNameFilter('');
+    setPhoneFilter('');
+    setPackageFilter('all');
+    setStatusFilter('all');
+    setAppliedFilters({
+      name: '',
+      phone: '',
+      package_id: 'all'
+    });
+    setCurrentPage(1);
+  };
+
+  const handleGenerateBills = async () => {
+    const month = prompt('Enter month for billing (e.g., JANUARY, FEBRUARY) or leave empty for current month:');
+    if (month === null) return; // User cancelled
+    
+    try {
+      await customerService.generateBills(month || undefined);
+      alert('Bills generated successfully!');
+      fetchData(); // Refresh the list to show new payments
+    } catch (error) {
+      console.error('Error generating bills:', error);
+      alert('Failed to generate bills. Please try again.');
+    }
+  };
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -98,12 +146,20 @@ export default function CustomersPage() {
               </Link>
               <h1 className="text-2xl font-bold text-gray-900">Manage Customers</h1>
             </div>
-            <Link
-              href="/customers/new"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Add New Customer
-            </Link>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleGenerateBills}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Generate Bills
+              </button>
+              <Link
+                href="/customers/new"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Add New Customer
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -112,34 +168,66 @@ export default function CustomersPage() {
         {/* Search and Filters */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="md:col-span-2">
-                <label htmlFor="search" className="sr-only">Search customers</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="search"
-                    type="text"
-                    placeholder="Search by name, phone, email, or address..."
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 !text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+              {/* Name Filter */}
+              <div>
+                <label htmlFor="name-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  id="name-filter"
+                  type="text"
+                  placeholder="Search by name..."
+                  value={nameFilter}
+                  onChange={(e) => setNameFilter(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Phone Filter */}
+              <div>
+                <label htmlFor="phone-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  id="phone-filter"
+                  type="text"
+                  placeholder="Search by phone..."
+                  value={phoneFilter}
+                  onChange={(e) => setPhoneFilter(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Package Filter */}
+              <div>
+                <label htmlFor="package-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Package
+                </label>
+                <select
+                  id="package-filter"
+                  value={packageFilter}
+                  onChange={(e) => setPackageFilter(e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="all">All Packages</option>
+                  {packages.map((pkg) => (
+                    <option key={pkg.uid} value={pkg.id}>
+                      {pkg.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Status Filter */}
               <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
                   Status
                 </label>
                 <select
-                  id="status"
+                  id="status-filter"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
@@ -150,62 +238,23 @@ export default function CustomersPage() {
                 </select>
               </div>
 
-              {/* Package Filter */}
-              <div>
-                <label htmlFor="package" className="block text-sm font-medium text-gray-700 mb-1">
-                  Package
-                </label>
-                <select
-                  id="package"
-                  value={packageFilter}
-                  onChange={(e) => setPackageFilter(e.target.value)}
-                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="all">All Packages</option>
-                  {packages.map((pkg) => (
-                    <option key={pkg.uid} value={pkg.uid}>
-                      {pkg.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="mt-4 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-500">
-                  Showing {filteredCustomers.length} of {totalCount} customers
-                </span>
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="perPage" className="text-sm text-gray-500">
-                    Per page:
-                  </label>
-                  <select
-                    id="perPage"
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1); // Reset to first page when changing page size
-                    }}
-                    className="block border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex space-x-2">
+              {/* Search Button */}
+              <div className="flex items-end">
                 <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setPackageFilter('all');
-                  }}
-                  className="text-sm text-indigo-600 hover:text-indigo-500"
+                  onClick={handleSearch}
+                  className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm"
                 >
-                  Clear Filters
+                  Search
+                </button>
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="flex items-end">
+                <button
+                  onClick={handleClearFilters}
+                  className="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 text-sm"
+                >
+                  Clear
                 </button>
               </div>
             </div>
@@ -322,7 +371,7 @@ export default function CustomersPage() {
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || statusFilter !== 'all' || packageFilter !== 'all' 
+                {nameFilter || phoneFilter || packageFilter !== 'all' || statusFilter !== 'all' 
                   ? 'Try adjusting your search or filter criteria.' 
                   : 'Get started by creating a new customer.'}
               </p>

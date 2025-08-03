@@ -10,7 +10,10 @@ import {
   LoginRequest,
   LoginResponse,
   RefreshTokenResponse,
-  Me
+  Me,
+  UserList,
+  UserDetail,
+  UserRegistration
 } from './types';
 
 // Auth Services
@@ -45,6 +48,45 @@ export const authService = {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+  }
+};
+
+// User Services
+export const userService = {
+  getUsers: async (page = 1, pageSize = 10): Promise<PaginatedResponse<UserList>> => {
+    const response = await apiClient.get('/users', {
+      params: { page, page_size: pageSize }
+    });
+    return response.data;
+  },
+
+  getUser: async (uid: string): Promise<UserDetail> => {
+    const response = await apiClient.get(`/users/${uid}`);
+    return response.data;
+  },
+
+  createUser: async (userData: Partial<UserList>): Promise<UserList> => {
+    const response = await apiClient.post('/users', userData);
+    return response.data;
+  },
+
+  updateUser: async (uid: string, userData: Partial<UserDetail>): Promise<UserDetail> => {
+    const response = await apiClient.put(`/users/${uid}`, userData);
+    return response.data;
+  },
+
+  deleteUser: async (uid: string): Promise<void> => {
+    await apiClient.delete(`/users/${uid}`);
+  },
+
+  register: async (userData: UserRegistration): Promise<UserRegistration> => {
+    const response = await apiClient.post('/users/register', userData);
+    return response.data;
+  },
+
+  updateMe: async (userData: Partial<Me>): Promise<Me> => {
+    const response = await apiClient.put('/users/me', userData);
+    return response.data;
   }
 };
 
@@ -86,10 +128,27 @@ export const packageService = {
 
 // Customer Services
 export const customerService = {
-  getCustomers: async (page = 1, pageSize = 10): Promise<PaginatedResponse<CustomerList>> => {
-    const response = await apiClient.get('/customers', {
-      params: { page, page_size: pageSize }
-    });
+  getCustomers: async (
+    page = 1, 
+    pageSize = 10, 
+    filters?: {
+      name?: string;
+      user_id?: number;
+      phone?: string;
+      package_id?: number;
+    }
+  ): Promise<PaginatedResponse<CustomerList>> => {
+    const params: Record<string, string | number> = { page, page_size: pageSize };
+    
+    // Add filters if provided
+    if (filters) {
+      if (filters.name) params.name = filters.name;
+      if (filters.user_id) params.user_id = filters.user_id;
+      if (filters.phone) params.phone = filters.phone;
+      if (filters.package_id) params.package_id = filters.package_id;
+    }
+    
+    const response = await apiClient.get('/customers', { params });
     return response.data;
   },
 
@@ -122,6 +181,11 @@ export const customerService = {
   createCustomerPayment: async (uid: string, paymentData: Partial<PaymentList>): Promise<PaymentList> => {
     const response = await apiClient.post(`/customers/${uid}/payments`, paymentData);
     return response.data;
+  },
+
+  generateBills: async (month?: string): Promise<void> => {
+    const params = month ? { month } : {};
+    await apiClient.post('/customers/bills/generate', null, { params });
   }
 };
 
