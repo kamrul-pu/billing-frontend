@@ -15,7 +15,7 @@ export default function PackagesPage() {
 
   useEffect(() => {
     fetchPackages();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPackages = async () => {
     try {

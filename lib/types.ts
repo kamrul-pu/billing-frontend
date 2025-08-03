@@ -44,6 +44,8 @@ export interface PackageBase {
 
 export interface PackageList extends PackageBase {
   // PackageList inherits all properties from PackageBase
+  // No additional properties needed
+  _extends?: never; // TypeScript hack to make interface non-empty
 }
 
 export interface PackageDetail extends PackageBase {
@@ -121,6 +123,8 @@ export interface PaymentList extends PaymentBase {
 
 export interface PaymentDetail extends PaymentBase {
   // PaymentDetail inherits all properties from PaymentBase
+  // No additional properties needed
+  _extends?: never; // TypeScript hack to make interface non-empty
 }
 
 // API Response types

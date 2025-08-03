@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PaymentList, CustomerDetail } from '@/lib/types';
@@ -22,11 +22,7 @@ export default function CustomerPaymentsPage() {
   const params = useParams();
   const uid = params.uid as string;
 
-  useEffect(() => {
-    fetchData();
-  }, [currentPage, pageSize]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [customerData, paymentsData] = await Promise.all([
@@ -44,7 +40,11 @@ export default function CustomerPaymentsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [uid, currentPage, pageSize, router]);
+
+    useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleDelete = async (paymentUid: string, billingMonth: string) => {
     if (window.confirm(`Are you sure you want to delete payment for "${billingMonth}"? This action cannot be undone.`)) {

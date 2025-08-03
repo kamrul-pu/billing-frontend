@@ -96,7 +96,7 @@ export default function NewCustomerPage() {
     if (formData.credentials.trim()) {
       try {
         JSON.parse(formData.credentials);
-      } catch (error) {
+      } catch {
         newErrors.credentials = 'Please enter valid JSON format';
       }
     }
@@ -461,7 +461,7 @@ export default function NewCustomerPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-medium text-gray-700">Account Status</h4>
-                      <p className="text-sm text-gray-500">Enable or disable this customer's account</p>
+                      <p className="text-sm text-gray-500">Enable or disable this customer&apos;s account</p>
                     </div>
                     <div className="flex items-center">
                       <label className="relative inline-flex items-center cursor-pointer">

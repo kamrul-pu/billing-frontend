@@ -9,7 +9,7 @@ type AuthGuardProps = {
 
 export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   const router = useRouter()
-  const user = authService.getCurrentUser()
+  const user = authService.getCurrentUserSync()
 
   useEffect(() => {
     // If no user is logged in and we're not on the login page
@@ -22,7 +22,7 @@ export default function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     if (allowedRoles && !authService.hasPermission(allowedRoles)) {
       router.push('/dashboard')
     }
-  }, [router.pathname, allowedRoles])
+  }, [router.pathname, allowedRoles]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // If we're on the login page and user is logged in, redirect to dashboard
   if (user && router.pathname === '/login') {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CustomerDetail, PaymentList } from '@/lib/types';
 import { customerService } from '@/lib/api-services';
@@ -11,15 +11,11 @@ export default function CustomerDetailPage() {
   const [payments, setPayments] = useState<PaymentList[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
-  const router = useRouter();
+
   const params = useParams();
   const uid = params.uid as string;
 
-  useEffect(() => {
-    fetchCustomerData();
-  }, [uid]);
-
-  const fetchCustomerData = async () => {
+  const fetchCustomerData = useCallback(async () => {
     try {
       setLoading(true);
       setPaymentsLoading(true);
@@ -37,7 +33,11 @@ export default function CustomerDetailPage() {
       setLoading(false);
       setPaymentsLoading(false);
     }
-  };
+  }, [uid]);
+
+  useEffect(() => {
+    fetchCustomerData();
+  }, [fetchCustomerData]);
 
   const formatCurrency = (amount: string | number) => {
     return new Intl.NumberFormat('bn-BD', {

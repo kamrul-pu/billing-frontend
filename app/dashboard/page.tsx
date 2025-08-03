@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Me, CustomerList, PaymentList, PackageList } from '@/lib/types';
+import { Me, CustomerList, PaymentList } from '@/lib/types';
 import { authService, customerService, paymentService, packageService } from '@/lib/api-services';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<Me | null>(null);
   const [customers, setCustomers] = useState<CustomerList[]>([]);
   const [payments, setPayments] = useState<PaymentList[]>([]);
-  const [packages, setPackages] = useState<PackageList[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -49,7 +49,6 @@ export default function DashboardPage() {
           
           setCustomers(customersData.results);
           setPayments(paymentsData.results);
-          setPackages(packagesData.results);
 
           // Calculate statistics using proper counts and comprehensive data
           const totalRevenue = paymentsData.results.reduce((sum, payment) => {

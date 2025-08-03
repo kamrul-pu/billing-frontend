@@ -9,7 +9,6 @@ import {
   PaymentDetail,
   LoginRequest,
   LoginResponse,
-  RefreshTokenRequest,
   RefreshTokenResponse,
   Me
 } from './types';
@@ -30,7 +29,18 @@ export const authService = {
     const response = await apiClient.get('/users/me');
     return response.data;
   },
-
+  getCurrentUser: async (): Promise<Me> => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : {phone: '', email: '', first_name: '', last_name: '', gender: 'UNKNOWN', image: '', kind: 'CUSTOMER'};
+  },
+  getCurrentUserSync: (): Me => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : {phone: '', email: '', first_name: '', last_name: '', gender: 'UNKNOWN', image: '', kind: 'CUSTOMER'};
+  },
+  hasPermission: (allowedRoles: string[]): boolean => {
+    const user = authService.getCurrentUserSync();
+    return allowedRoles.includes(user.kind || 'CUSTOMER');
+  },
   logout: () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');

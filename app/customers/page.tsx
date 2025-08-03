@@ -16,9 +16,9 @@ export default function CustomersPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => {
+    useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {

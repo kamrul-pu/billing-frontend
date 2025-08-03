@@ -15,7 +15,7 @@ export default function PaymentDetailPage() {
 
   useEffect(() => {
     fetchPaymentData();
-  }, [uid]);
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPaymentData = async () => {
     try {

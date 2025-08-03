@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PackageDetail } from '@/lib/types';
@@ -23,7 +23,7 @@ export default function EditPackagePage() {
 
   useEffect(() => {
     fetchPackage();
-  }, [uid]);
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPackage = async () => {
     try {

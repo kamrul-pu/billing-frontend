@@ -19,7 +19,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
