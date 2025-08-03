@@ -191,10 +191,27 @@ export const customerService = {
 
 // Payment Services
 export const paymentService = {
-  getPayments: async (page = 1, pageSize = 10): Promise<PaginatedResponse<PaymentList>> => {
-    const response = await apiClient.get('/payments', {
-      params: { page, page_size: pageSize }
-    });
+  getPayments: async (
+    page = 1, 
+    pageSize = 10, 
+    filters?: {
+      customer_name?: string;
+      customer_phone?: string;
+      collected_by?: string;
+      month?: string;
+    }
+  ): Promise<PaginatedResponse<PaymentList>> => {
+    const params: Record<string, string | number> = { page, page_size: pageSize };
+    
+    // Add filters if provided
+    if (filters) {
+      if (filters.customer_name) params.customer_name = filters.customer_name;
+      if (filters.customer_phone) params.customer_phone = filters.customer_phone;
+      if (filters.collected_by) params.collected_by = filters.collected_by;
+      if (filters.month) params.month = filters.month;
+    }
+    
+    const response = await apiClient.get('/payments', { params });
     return response.data;
   },
 

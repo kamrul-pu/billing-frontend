@@ -8,23 +8,47 @@ import { paymentService } from '@/lib/api-services';
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<PaymentList[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
-  const [methodFilter, setMethodFilter] = useState<string>('all');
-  const [billingMonthFilter, setBillingMonthFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize] = useState(20);
+  
+  // Filter input states
+  const [customerNameFilter, setCustomerNameFilter] = useState('');
+  const [customerPhoneFilter, setCustomerPhoneFilter] = useState('');
+  const [collectedByFilter, setCollectedByFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [methodFilter, setMethodFilter] = useState<string>('all');
+  
+  // Applied filters (what's actually being used for search)
+  const [appliedFilters, setAppliedFilters] = useState({
+    customer_name: '',
+    customer_phone: '',
+    collected_by: '',
+    month: ''
+  });
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, appliedFilters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await paymentService.getPayments(currentPage, pageSize);
+      
+      // Build filters object from applied filters
+      const filters: {
+        customer_name?: string;
+        customer_phone?: string;
+        collected_by?: string;
+        month?: string;
+      } = {};
+      if (appliedFilters.customer_name.trim()) filters.customer_name = appliedFilters.customer_name.trim();
+      if (appliedFilters.customer_phone.trim()) filters.customer_phone = appliedFilters.customer_phone.trim();
+      if (appliedFilters.collected_by.trim()) filters.collected_by = appliedFilters.collected_by.trim();
+      if (appliedFilters.month && appliedFilters.month !== 'all') filters.month = appliedFilters.month;
+      
+      const response = await paymentService.getPayments(currentPage, pageSize, filters);
       setPayments(response.results);
       setTotalCount(response.count);
     } catch (error: unknown) {
@@ -75,13 +99,8 @@ export default function PaymentsPage() {
     return colors[method] || 'bg-gray-100 text-gray-800';
   };
 
+  // Client-side filtering for status and method (since backend doesn't support them)
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = 
-      payment.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.customer?.phone.includes(searchTerm) ||
-      payment.transaction_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.note?.toLowerCase().includes(searchTerm.toLowerCase());
-
     const matchesStatus = 
       statusFilter === 'all' || 
       (statusFilter === 'paid' && payment.paid) ||
@@ -91,33 +110,34 @@ export default function PaymentsPage() {
       methodFilter === 'all' || 
       payment.payment_method === methodFilter;
 
-    const matchesBillingMonth = 
-      billingMonthFilter === 'all' || 
-      payment.billing_month === billingMonthFilter;
-
-    const matchesDate = 
-      !dateFilter || 
-      (payment.payment_date && payment.payment_date.startsWith(dateFilter));
-
-    return matchesSearch && matchesStatus && matchesMethod && matchesBillingMonth && matchesDate;
+    return matchesStatus && matchesMethod;
   });
 
-  // Calculate totals for filtered payments
-  const totalAmount = filteredPayments.reduce((sum, payment) => {
-    return sum + parseFloat(payment.amount?.toString() || '0');
-  }, 0);
+  const handleSearch = () => {
+    setAppliedFilters({
+      customer_name: customerNameFilter,
+      customer_phone: customerPhoneFilter,
+      collected_by: collectedByFilter,
+      month: monthFilter
+    });
+    setCurrentPage(1); // Reset to first page when searching
+  };
 
-  const paidAmount = filteredPayments
-    .filter(payment => payment.paid)
-    .reduce((sum, payment) => {
-      return sum + parseFloat(payment.amount?.toString() || '0');
-    }, 0);
-
-  const pendingAmount = filteredPayments
-    .filter(payment => !payment.paid)
-    .reduce((sum, payment) => {
-      return sum + parseFloat(payment.amount?.toString() || '0');
-    }, 0);
+  const handleClearFilters = () => {
+    setCustomerNameFilter('');
+    setCustomerPhoneFilter('');
+    setCollectedByFilter('');
+    setMonthFilter('all');
+    setStatusFilter('all');
+    setMethodFilter('all');
+    setAppliedFilters({
+      customer_name: '',
+      customer_phone: '',
+      collected_by: '',
+      month: ''
+    });
+    setCurrentPage(1);
+  };
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -155,76 +175,64 @@ export default function PaymentsPage() {
         {/* Search and Filters */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-              {/* Search */}
-              <div className="md:col-span-2">
-                <label htmlFor="search" className="sr-only">Search payments</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="search"
-                    type="text"
-                    placeholder="Search by customer name, phone, transaction ID, or notes..."
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white text-gray-900 !text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Status Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
+              {/* Customer Name Filter */}
               <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
+                <label htmlFor="customer-name-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer Name
                 </label>
-                <select
-                  id="status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'paid' | 'pending')}
+                <input
+                  id="customer-name-filter"
+                  type="text"
+                  placeholder="Search by customer name..."
+                  value={customerNameFilter}
+                  onChange={(e) => setCustomerNameFilter(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="paid">Paid</option>
-                  <option value="pending">Pending</option>
-                </select>
+                />
               </div>
 
-              {/* Payment Method Filter */}
+              {/* Customer Phone Filter */}
               <div>
-                <label htmlFor="method" className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Method
+                <label htmlFor="customer-phone-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Customer Phone
                 </label>
-                <select
-                  id="method"
-                  value={methodFilter}
-                  onChange={(e) => setMethodFilter(e.target.value)}
+                <input
+                  id="customer-phone-filter"
+                  type="text"
+                  placeholder="Search by customer phone..."
+                  value={customerPhoneFilter}
+                  onChange={(e) => setCustomerPhoneFilter(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="all">All Methods</option>
-                  <option value="CASH">Cash</option>
-                  <option value="BKASH">bKash</option>
-                  <option value="NAGAD">Nagad</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="MOBILE_BANKING">Mobile Banking</option>
-                  <option value="ONLINE_PAYMENT">Online Payment</option>
-                  <option value="ROCKET">Rocket</option>
-                  <option value="OTHER">Other</option>
-                </select>
+                />
               </div>
 
-              {/* Billing Month Filter */}
+              {/* Collected By Filter */}
               <div>
-                <label htmlFor="billingMonth" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="collected-by-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Collected By
+                </label>
+                <input
+                  id="collected-by-filter"
+                  type="text"
+                  placeholder="Search by collector name..."
+                  value={collectedByFilter}
+                  onChange={(e) => setCollectedByFilter(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Month Filter */}
+              <div>
+                <label htmlFor="month-filter" className="block text-sm font-medium text-gray-700 mb-1">
                   Billing Month
                 </label>
                 <select
-                  id="billingMonth"
-                  value={billingMonthFilter}
-                  onChange={(e) => setBillingMonthFilter(e.target.value)}
+                  id="month-filter"
+                  value={monthFilter}
+                  onChange={(e) => setMonthFilter(e.target.value)}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="all">All Months</option>
@@ -243,80 +251,63 @@ export default function PaymentsPage() {
                 </select>
               </div>
 
-              {/* Date Filter */}
+              {/* Status Filter */}
               <div>
-                <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Date
+                <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
                 </label>
-                <input
-                  type="date"
-                  id="dateFilter"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
+                <select
+                  id="status-filter"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'paid' | 'pending')}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-            </div>
-            
-            {/* Totals Section */}
-            <div className="mt-6 bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{filteredPayments.length}</div>
-                  <div className="text-sm text-gray-500">Total Payments</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{formatCurrency(totalAmount)}</div>
-                  <div className="text-sm text-gray-500">Total Amount</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{formatCurrency(paidAmount)}</div>
-                  <div className="text-sm text-gray-500">Paid Amount</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{formatCurrency(pendingAmount)}</div>
-                  <div className="text-sm text-gray-500">Pending Amount</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-500">
-                  Showing {filteredPayments.length} of {totalCount} payments
-                </span>
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="perPage" className="text-sm text-gray-500">
-                    Per page:
-                  </label>
-                  <select
-                    id="perPage"
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1); // Reset to first page when changing page size
-                    }}
-                    className="block border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setMethodFilter('all');
-                    setBillingMonthFilter('all');
-                    setDateFilter('');
-                  }}
-                  className="text-sm text-indigo-600 hover:text-indigo-500"
                 >
-                  Clear Filters
+                  <option value="all">All Status</option>
+                  <option value="paid">Paid</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+
+              {/* Payment Method Filter */}
+              <div>
+                <label htmlFor="method-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  id="method-filter"
+                  value={methodFilter}
+                  onChange={(e) => setMethodFilter(e.target.value)}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="all">All Methods</option>
+                  <option value="CASH">Cash</option>
+                  <option value="BKASH">bKash</option>
+                  <option value="NAGAD">Nagad</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
+                  <option value="MOBILE_BANKING">Mobile Banking</option>
+                  <option value="ONLINE_PAYMENT">Online Payment</option>
+                  <option value="ROCKET">Rocket</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              {/* Search Button */}
+              <div className="flex items-end">
+                <button
+                  onClick={handleSearch}
+                  className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm"
+                >
+                  Search
+                </button>
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="flex items-end">
+                <button
+                  onClick={handleClearFilters}
+                  className="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 text-sm"
+                >
+                  Clear
                 </button>
               </div>
             </div>
@@ -426,7 +417,7 @@ export default function PaymentsPage() {
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || statusFilter !== 'all' || methodFilter !== 'all' 
+                {customerNameFilter || customerPhoneFilter || collectedByFilter || monthFilter !== 'all' 
                   ? 'Try adjusting your search or filter criteria.' 
                   : 'Get started by creating a new payment.'}
               </p>
