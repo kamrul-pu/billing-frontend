@@ -9,16 +9,16 @@ import { authService } from '@/lib/api-services'
 import clsx from 'clsx'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Customers', href: '/customers' },
-  { name: 'Packages', href: '/packages' },
-  { name: 'Payments', href: '/payments' },
+  { name: 'Dashboard', href: '/dashboard', roles: ['ADMIN', 'MANAGER', 'STAFF', 'SUPER_ADMIN'] },
+  { name: 'Customers', href: '/customers', roles: ['ADMIN', 'MANAGER', 'STAFF', 'SUPER_ADMIN'] },
+  { name: 'Packages', href: '/packages', roles: ['ADMIN', 'MANAGER', 'STAFF', 'SUPER_ADMIN'] },
+  { name: 'Payments', href: '/payments', roles: ['ADMIN', 'MANAGER', 'STAFF', 'SUPER_ADMIN'] },
 ]
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
-  const user = authService.getCurrentUser()
+  const user = authService.getCurrentUserSync()
 
   const handleLogout = () => {
     authService.logout()
@@ -39,20 +39,22 @@ export default function Navbar() {
                 </div>
                 <div className="hidden md:block">
                   <div className="ml-10 flex items-baseline space-x-4">
-                    {navigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className={clsx(
-                          pathname === item.href
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                          'rounded-md px-3 py-2 text-sm font-medium'
-                        )}
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
+                    {navigation
+                      .filter(item => !item.roles || authService.hasPermission(item.roles))
+                      .map((item) => (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          className={clsx(
+                            pathname === item.href
+                              ? 'bg-gray-900 text-white'
+                              : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                            'rounded-md px-3 py-2 text-sm font-medium'
+                          )}
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -123,20 +125,22 @@ export default function Navbar() {
 
           <Disclosure.Panel className="md:hidden">
             <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={clsx(
-                    pathname === item.href
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                    'block rounded-md px-3 py-2 text-base font-medium'
-                  )}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigation
+                .filter(item => !item.roles || authService.hasPermission(item.roles))
+                .map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={clsx(
+                      pathname === item.href
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                      'block rounded-md px-3 py-2 text-base font-medium'
+                    )}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
             </div>
             <div className="border-t border-gray-700 pb-3 pt-4">
               <div className="flex items-center px-5">

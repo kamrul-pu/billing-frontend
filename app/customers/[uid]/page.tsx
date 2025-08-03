@@ -11,6 +11,8 @@ export default function CustomerDetailPage() {
   const [payments, setPayments] = useState<PaymentList[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const [allPayments, setAllPayments] = useState<PaymentList[]>([]);
+  const [allPaymentsLoading, setAllPaymentsLoading] = useState(true);
 
   const params = useParams();
   const uid = params.uid as string;
@@ -19,19 +21,23 @@ export default function CustomerDetailPage() {
     try {
       setLoading(true);
       setPaymentsLoading(true);
+      setAllPaymentsLoading(true);
       
-      const [customerData, paymentsData] = await Promise.all([
+      const [customerData, paymentsData, allPaymentsData] = await Promise.all([
         customerService.getCustomer(uid),
-        customerService.getCustomerPayments(uid, 1, 10)
+        customerService.getCustomerPayments(uid, 1, 10),
+        customerService.getCustomerPayments(uid, 1, 1000) // Get all payments for totals
       ]);
       
       setCustomer(customerData);
       setPayments(paymentsData.results);
+      setAllPayments(allPaymentsData.results);
     } catch (error: unknown) {
       console.error('Error fetching customer data:', error);
     } finally {
       setLoading(false);
       setPaymentsLoading(false);
+      setAllPaymentsLoading(false);
     }
   }, [uid]);
 
@@ -53,6 +59,23 @@ export default function CustomerDetailPage() {
       day: 'numeric'
     });
   };
+
+  // Calculate totals for all customer payments
+  const totalAmount = allPayments.reduce((sum, payment) => {
+    return sum + parseFloat(payment.bill_amount?.toString() || '0');
+  }, 0);
+
+  const paidAmount = allPayments
+    .filter(payment => payment.paid)
+    .reduce((sum, payment) => {
+      return sum + parseFloat(payment.amount?.toString() || '0');
+    }, 0);
+
+  const pendingAmount = allPayments
+    .filter(payment => !payment.paid)
+    .reduce((sum, payment) => {
+      return sum + parseFloat(payment.bill_amount?.toString() || '0');
+    }, 0);
 
   if (loading) {
     return (
@@ -272,6 +295,46 @@ export default function CustomerDetailPage() {
                     {customer.connection_start_date ? formatDate(customer.connection_start_date) : 'Not set'}
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Payment Totals */}
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Payment Summary</h3>
+              </div>
+              <div className="px-6 py-4">
+                {allPaymentsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Total Payments</span>
+                      <span className="text-sm font-medium text-gray-900">{allPayments.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Total Bill Amount</span>
+                      <span className="text-sm font-medium text-blue-600">{formatCurrency(totalAmount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Paid Amount</span>
+                      <span className="text-sm font-medium text-green-600">{formatCurrency(paidAmount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Pending Amount</span>
+                      <span className="text-sm font-medium text-red-600">{formatCurrency(pendingAmount)}</span>
+                    </div>
+                    {pendingAmount > 0 && (
+                      <div className="mt-4 p-3 bg-red-50 rounded-lg">
+                        <p className="text-sm text-red-700">
+                          ⚠️ This customer has outstanding payments of {formatCurrency(pendingAmount)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
