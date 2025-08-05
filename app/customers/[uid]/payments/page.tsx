@@ -115,7 +115,7 @@ export default function CustomerPaymentsPage() {
 
   // Calculate totals for filtered payments
   const totalAmount = filteredPayments.reduce((sum, payment) => {
-    return sum + parseFloat(payment.amount?.toString() || '0');
+    return sum + parseFloat(payment.bill_amount?.toString() || '0');
   }, 0);
 
   const paidAmount = filteredPayments
@@ -127,7 +127,7 @@ export default function CustomerPaymentsPage() {
   const pendingAmount = filteredPayments
     .filter(payment => !payment.paid)
     .reduce((sum, payment) => {
-      return sum + parseFloat(payment.amount?.toString() || '0');
+      return sum + parseFloat(payment.bill_amount?.toString() || '0');
     }, 0);
 
   const totalPages = Math.ceil(totalCount / pageSize);
