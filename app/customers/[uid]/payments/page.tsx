@@ -387,6 +387,9 @@ export default function CustomerPaymentsPage() {
                     Payment Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bill Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -418,6 +421,11 @@ export default function CustomerPaymentsPage() {
                         {payment.transaction_id && (
                           <div className="text-xs text-gray-400">ID: {payment.transaction_id}</div>
                         )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatCurrency(payment.bill_amount || '0')}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

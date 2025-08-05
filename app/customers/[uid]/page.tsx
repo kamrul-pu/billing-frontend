@@ -249,7 +249,10 @@ export default function CustomerDetailPage() {
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium text-gray-900">
-                                {formatCurrency(payment.amount || '0')}
+                                Bill: {formatCurrency(payment.bill_amount || '0')}
+                              </p>
+                              <p className="text-sm font-medium text-gray-900">
+                                Paid: {formatCurrency(payment.amount || '0')}
                               </p>
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                 payment.paid 
