@@ -363,7 +363,7 @@ export default function PaymentsPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Billing Month</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -390,9 +390,9 @@ export default function PaymentsPage() {
                             {payment.payment_method?.replace('_', ' ')}
                           </span>
                         </div>
-                        {payment.transaction_id && (
+                        {/* {payment.transaction_id && (
                           <div className="text-xs text-gray-400">ID: {payment.transaction_id}</div>
-                        )}
+                        )} */}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

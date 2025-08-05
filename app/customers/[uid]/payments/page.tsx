@@ -418,9 +418,9 @@ export default function CustomerPaymentsPage() {
                             {payment.payment_method?.replace('_', ' ')}
                           </span>
                         </div>
-                        {payment.transaction_id && (
+                        {/* {payment.transaction_id && (
                           <div className="text-xs text-gray-400">ID: {payment.transaction_id}</div>
-                        )}
+                        )} */}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
