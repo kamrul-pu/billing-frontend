@@ -1,24 +1,23 @@
 'use client';
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 type ContactForm = {
-  name: string
-  phone: string
-  email: string
-  message: string
-}
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+};
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false)
-  const { register, handleSubmit, formState: { errors } } = useForm<ContactForm>()
+  const [submitted, setSubmitted] = useState(false);
+  const { register, handleSubmit, formState: { errors } } = useForm<ContactForm>();
 
   const onSubmit = async (data: ContactForm) => {
-    // Here you would typically send this data to your backend
-    console.log('Contact form data:', data)
-    setSubmitted(true)
-  }
+    console.log('Contact form data:', data);
+    setSubmitted(true);
+  };
 
   if (submitted) {
     return (
@@ -32,7 +31,7 @@ export default function ContactPage() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -52,6 +51,7 @@ export default function ContactPage() {
 
           <div className="mt-8 md:mt-0">
             <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-y-6">
+              {/* Name Field */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                   Full name
@@ -60,7 +60,13 @@ export default function ContactPage() {
                   <input
                     type="text"
                     {...register('name', { required: 'Name is required' })}
-                    className="py-3 px-4 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md"
+                    className="
+                      w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
+                      focus:ring-indigo-500 focus:border-indigo-500
+                      bg-white text-gray-900 placeholder-gray-500
+                      block
+                    "
+                    placeholder="Enter your full name"
                   />
                   {errors.name && (
                     <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -68,6 +74,7 @@ export default function ContactPage() {
                 </div>
               </div>
 
+              {/* Phone Field */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   Phone
@@ -76,7 +83,13 @@ export default function ContactPage() {
                   <input
                     type="tel"
                     {...register('phone', { required: 'Phone number is required' })}
-                    className="py-3 px-4 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md"
+                    className="
+                      w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
+                      focus:ring-indigo-500 focus:border-indigo-500
+                      bg-white text-gray-900 placeholder-gray-500
+                      block
+                    "
+                    placeholder="Enter your phone number"
                   />
                   {errors.phone && (
                     <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
@@ -84,6 +97,7 @@ export default function ContactPage() {
                 </div>
               </div>
 
+              {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email
@@ -92,12 +106,19 @@ export default function ContactPage() {
                   <input
                     type="email"
                     {...register('email', {
+                      required: 'Email is required',
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: 'Invalid email address',
                       },
                     })}
-                    className="py-3 px-4 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md"
+                    className="
+                      w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
+                      focus:ring-indigo-500 focus:border-indigo-500
+                      bg-white text-gray-900 placeholder-gray-500
+                      block
+                    "
+                    placeholder="Enter your email"
                   />
                   {errors.email && (
                     <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -105,6 +126,7 @@ export default function ContactPage() {
                 </div>
               </div>
 
+              {/* Message Field */}
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-700">
                   Message
@@ -113,7 +135,13 @@ export default function ContactPage() {
                   <textarea
                     {...register('message', { required: 'Message is required' })}
                     rows={4}
-                    className="py-3 px-4 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md"
+                    className="
+                      w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
+                      focus:ring-indigo-500 focus:border-indigo-500
+                      bg-white text-gray-900 placeholder-gray-500
+                      block
+                    "
+                    placeholder="Tell us more about your needs"
                   />
                   {errors.message && (
                     <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>
@@ -121,10 +149,16 @@ export default function ContactPage() {
                 </div>
               </div>
 
+              {/* Submit Button */}
               <div>
                 <button
                   type="submit"
-                  className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="
+                    w-full inline-flex items-center justify-center
+                    px-6 py-3 border border-transparent rounded-md shadow-sm
+                    text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                  "
                 >
                   Submit
                 </button>
@@ -134,5 +168,5 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
