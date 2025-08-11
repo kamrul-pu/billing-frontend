@@ -11,7 +11,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(25);
   
   // Filter states
   const [nameFilter, setNameFilter] = useState('');
@@ -23,7 +23,8 @@ export default function CustomersPage() {
   const [appliedFilters, setAppliedFilters] = useState({
     name: '',
     phone: '',
-    package_id: 'all' as string | number
+    package_id: 'all' as string | number,
+    is_active: 'all' as string | boolean
   });
 
   useEffect(() => {
@@ -39,10 +40,12 @@ export default function CustomersPage() {
         name?: string;
         phone?: string;
         package_id?: number;
+        is_active?: boolean;
       } = {};
       if (appliedFilters.name.trim()) filters.name = appliedFilters.name.trim();
       if (appliedFilters.phone.trim()) filters.phone = appliedFilters.phone.trim();
       if (appliedFilters.package_id !== 'all') filters.package_id = parseInt(appliedFilters.package_id as string);
+      if (appliedFilters.is_active !== 'all') filters.is_active = appliedFilters.is_active === 'active';
       
       const [customersData, packagesData] = await Promise.all([
         customerService.getCustomers(currentPage, pageSize, filters),
@@ -78,21 +81,12 @@ export default function CustomersPage() {
     }).format(parseFloat(amount?.toString() || '0'));
   };
 
-  // Client-side filtering for status (since backend doesn't support it)
-  const filteredCustomers = customers.filter(customer => {
-    const matchesStatus = 
-      statusFilter === 'all' || 
-      (statusFilter === 'active' && customer.is_active) ||
-      (statusFilter === 'inactive' && !customer.is_active);
-
-    return matchesStatus;
-  });
-
   const handleSearch = () => {
     setAppliedFilters({
       name: nameFilter,
       phone: phoneFilter,
-      package_id: packageFilter
+      package_id: packageFilter,
+      is_active: statusFilter
     });
     setCurrentPage(1); // Reset to first page when searching
   };
@@ -105,7 +99,8 @@ export default function CustomersPage() {
     setAppliedFilters({
       name: '',
       phone: '',
-      package_id: 'all'
+      package_id: 'all',
+      is_active: 'all'
     });
     setCurrentPage(1);
   };
@@ -168,7 +163,7 @@ export default function CustomersPage() {
         {/* Search and Filters */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
               {/* Name Filter */}
               <div>
                 <label htmlFor="name-filter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -238,6 +233,27 @@ export default function CustomersPage() {
                 </select>
               </div>
 
+              {/* Page Size Selector */}
+              <div>
+                <label htmlFor="page-size" className="block text-sm font-medium text-gray-700 mb-1">
+                  Page Size
+                </label>
+                <select
+                  id="page-size"
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(parseInt(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing page size
+                  }}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+
               {/* Search Button */}
               <div className="flex items-end">
                 <button
@@ -276,7 +292,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCustomers.map((customer) => (
+                {customers.map((customer) => (
                   <tr key={customer.uid} className="hover:bg-gray-50">
                     {/* Name (clickable) */}
                     <td className="px-2 py-4 whitespace-nowrap w-32 truncate">
@@ -349,7 +365,7 @@ export default function CustomersPage() {
           </div>
 
           {/* Empty State */}
-          {filteredCustomers.length === 0 && !loading && (
+          {customers.length === 0 && !loading && (
             <div className="text-center py-12">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />

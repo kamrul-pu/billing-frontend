@@ -136,9 +136,10 @@ export const customerService = {
       user_id?: number;
       phone?: string;
       package_id?: number;
+      is_active?: boolean;
     }
   ): Promise<PaginatedResponse<CustomerList>> => {
-    const params: Record<string, string | number> = { page, page_size: pageSize };
+    const params: Record<string, string | number | boolean> = { page, page_size: pageSize };
     
     // Add filters if provided
     if (filters) {
@@ -146,6 +147,7 @@ export const customerService = {
       if (filters.user_id) params.user_id = filters.user_id;
       if (filters.phone) params.phone = filters.phone;
       if (filters.package_id) params.package_id = filters.package_id;
+      if (filters.is_active !== undefined) params.is_active = filters.is_active;
     }
     
     const response = await apiClient.get('/customers', { params });

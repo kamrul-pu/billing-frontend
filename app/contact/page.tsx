@@ -64,9 +64,10 @@ export default function ContactPage() {
                       w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
                       focus:ring-indigo-500 focus:border-indigo-500
                       bg-white text-gray-900 placeholder-gray-500
-                      block
+                      block !text-gray-900
                     "
                     placeholder="Enter your full name"
+                    style={{ color: '#111827' }}
                   />
                   {errors.name && (
                     <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -87,9 +88,10 @@ export default function ContactPage() {
                       w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
                       focus:ring-indigo-500 focus:border-indigo-500
                       bg-white text-gray-900 placeholder-gray-500
-                      block
+                      block !text-gray-900
                     "
                     placeholder="Enter your phone number"
+                    style={{ color: '#111827' }}
                   />
                   {errors.phone && (
                     <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
@@ -116,9 +118,10 @@ export default function ContactPage() {
                       w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
                       focus:ring-indigo-500 focus:border-indigo-500
                       bg-white text-gray-900 placeholder-gray-500
-                      block
+                      block !text-gray-900
                     "
                     placeholder="Enter your email"
+                    style={{ color: '#111827' }}
                   />
                   {errors.email && (
                     <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -139,9 +142,10 @@ export default function ContactPage() {
                       w-full px-4 py-3 shadow-sm border-gray-300 rounded-md
                       focus:ring-indigo-500 focus:border-indigo-500
                       bg-white text-gray-900 placeholder-gray-500
-                      block
+                      block !text-gray-900
                     "
                     placeholder="Tell us more about your needs"
+                    style={{ color: '#111827' }}
                   />
                   {errors.message && (
                     <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>

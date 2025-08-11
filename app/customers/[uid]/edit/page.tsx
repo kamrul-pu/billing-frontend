@@ -97,9 +97,8 @@ export default function EditCustomerPage() {
       newErrors.name = 'Customer name is required';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (formData.phone.length < 10) {
+    // Phone validation - only validate if phone is provided
+    if (formData.phone.trim() && formData.phone.length < 10) {
       newErrors.phone = 'Phone number must be at least 10 digits';
     }
 
@@ -148,7 +147,7 @@ export default function EditCustomerPage() {
       await customerService.updateCustomer(uid, {
         name: formData.name.trim(),
         email: formData.email.trim() || undefined,
-        phone: formData.phone.trim(),
+        phone: formData.phone.trim() || undefined,
         address: formData.address.trim() || undefined,
         nid: formData.nid.trim() || undefined,
         package_id: parseInt(formData.package_id),
@@ -246,7 +245,7 @@ export default function EditCustomerPage() {
                   {/* Phone */}
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      Phone Number *
+                      Phone Number
                     </label>
                     <input
                       type="tel"
@@ -259,7 +258,7 @@ export default function EditCustomerPage() {
                           ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                           : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500'
                       } focus:outline-none focus:ring-1`}
-                      placeholder="e.g., 01712345678"
+                      placeholder="e.g., 01712345678 (optional)"
                     />
                     {errors.phone && (
                       <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
