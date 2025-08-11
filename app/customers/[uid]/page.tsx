@@ -45,6 +45,18 @@ export default function CustomerDetailPage() {
     fetchCustomerData();
   }, [fetchCustomerData]);
 
+  // Refresh data when page becomes visible (e.g., when navigating back from edit page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchCustomerData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchCustomerData]);
+
   const formatCurrency = (amount: string | number) => {
     return new Intl.NumberFormat('bn-BD', {
       style: 'currency',

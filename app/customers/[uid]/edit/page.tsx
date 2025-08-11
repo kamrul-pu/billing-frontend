@@ -26,6 +26,7 @@ export default function EditCustomerPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
@@ -138,12 +139,18 @@ export default function EditCustomerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submission started');
+    
     if (!validateForm()) {
+      console.log('Form validation failed');
       return;
     }
 
+    console.log('Form validation passed, starting update...');
     setSaving(true);
+    
     try {
+      console.log('Calling updateCustomer API...');
       await customerService.updateCustomer(uid, {
         name: formData.name.trim(),
         email: formData.email.trim() || undefined,
@@ -160,7 +167,16 @@ export default function EditCustomerPage() {
         is_active: formData.is_active
       });
       
-      router.push('/customers');
+      console.log('Customer updated successfully, redirecting to:', `/customers/${uid}`);
+      // Show success message and redirect to customer detail page
+      setSuccess(true);
+      
+      // Redirect using window.location for more reliable navigation
+      setTimeout(() => {
+        console.log('Redirecting to customer detail page...');
+        window.location.href = `/customers/${uid}`;
+      }, 100);
+      
     } catch (error: unknown) {
       console.error('Error updating customer:', error);
       if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
@@ -212,9 +228,27 @@ export default function EditCustomerPage() {
       </header>
 
       <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        {/* Success Message */}
+        {success && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-green-800">
+                  Customer updated successfully! Redirecting to customer details...
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" style={{ pointerEvents: success ? 'none' : 'auto', opacity: success ? 0.6 : 1 }}>
               {/* Basic Information */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
@@ -565,10 +599,10 @@ export default function EditCustomerPage() {
                 </Link>
                 <button
                   type="submit"
-                  disabled={saving || packagesLoading}
+                  disabled={saving || packagesLoading || success}
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? 'Saving...' : 'Save Changes'}
+                  {success ? 'Updated Successfully!' : (saving ? 'Saving...' : 'Save Changes')}
                 </button>
               </div>
             </form>

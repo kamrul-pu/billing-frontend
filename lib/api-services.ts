@@ -135,6 +135,7 @@ export const customerService = {
       name?: string;
       user_id?: number;
       phone?: string;
+      username?: string;
       package_id?: number;
       is_active?: boolean;
     }
@@ -146,6 +147,7 @@ export const customerService = {
       if (filters.name) params.name = filters.name;
       if (filters.user_id) params.user_id = filters.user_id;
       if (filters.phone) params.phone = filters.phone;
+      if (filters.username) params.username = filters.username;
       if (filters.package_id) params.package_id = filters.package_id;
       if (filters.is_active !== undefined) params.is_active = filters.is_active;
     }

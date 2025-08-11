@@ -16,6 +16,7 @@ export default function CustomersPage() {
   // Filter states
   const [nameFilter, setNameFilter] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
+  const [usernameFilter, setUsernameFilter] = useState('');
   const [packageFilter, setPackageFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   
@@ -23,6 +24,7 @@ export default function CustomersPage() {
   const [appliedFilters, setAppliedFilters] = useState({
     name: '',
     phone: '',
+    username: '',
     package_id: 'all' as string | number,
     is_active: 'all' as string | boolean
   });
@@ -39,11 +41,13 @@ export default function CustomersPage() {
       const filters: {
         name?: string;
         phone?: string;
+        username?: string;
         package_id?: number;
         is_active?: boolean;
       } = {};
       if (appliedFilters.name.trim()) filters.name = appliedFilters.name.trim();
       if (appliedFilters.phone.trim()) filters.phone = appliedFilters.phone.trim();
+      if (appliedFilters.username.trim()) filters.username = appliedFilters.username.trim();
       if (appliedFilters.package_id !== 'all') filters.package_id = parseInt(appliedFilters.package_id as string);
       if (appliedFilters.is_active !== 'all') filters.is_active = appliedFilters.is_active === 'active';
       
@@ -85,6 +89,7 @@ export default function CustomersPage() {
     setAppliedFilters({
       name: nameFilter,
       phone: phoneFilter,
+      username: usernameFilter,
       package_id: packageFilter,
       is_active: statusFilter
     });
@@ -94,11 +99,13 @@ export default function CustomersPage() {
   const handleClearFilters = () => {
     setNameFilter('');
     setPhoneFilter('');
+    setUsernameFilter('');
     setPackageFilter('all');
     setStatusFilter('all');
     setAppliedFilters({
       name: '',
       phone: '',
+      username: '',
       package_id: 'all',
       is_active: 'all'
     });
@@ -163,7 +170,7 @@ export default function CustomersPage() {
         {/* Search and Filters */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
               {/* Name Filter */}
               <div>
                 <label htmlFor="name-filter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -191,6 +198,22 @@ export default function CustomersPage() {
                   placeholder="Search by phone..."
                   value={phoneFilter}
                   onChange={(e) => setPhoneFilter(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Username Filter */}
+              <div>
+                <label htmlFor="username-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Username
+                </label>
+                <input
+                  id="username-filter"
+                  type="text"
+                  placeholder="Search by username..."
+                  value={usernameFilter}
+                  onChange={(e) => setUsernameFilter(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 />
