@@ -190,6 +190,14 @@ export const customerService = {
   generateBills: async (month?: string): Promise<void> => {
     const params = month ? { month } : {};
     await apiClient.post('/customers/bills/generate', null, { params });
+  },
+
+  toggleCustomerStatus: async (username: string, isActive: boolean): Promise<{ message: string }> => {
+    const response = await apiClient.post('/customers/status/toggle', {
+      username,
+      is_active: isActive
+    });
+    return response.data;
   }
 };
 

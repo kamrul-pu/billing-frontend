@@ -12,6 +12,7 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [statusToggleLoading, setStatusToggleLoading] = useState<Record<string, boolean>>({});
   
   // Filter states
   const [nameFilter, setNameFilter] = useState('');
@@ -123,6 +124,35 @@ export default function CustomersPage() {
     } catch (error) {
       console.error('Error generating bills:', error);
       alert('Failed to generate bills. Please try again.');
+    }
+  };
+
+  const handleToggleStatus = async (username: string, currentStatus: boolean) => {
+    if (!username) {
+      alert('Username is required to toggle status');
+      return;
+    }
+
+    const action = currentStatus ? 'disable' : 'enable';
+    const confirmMessage = `Are you sure you want to ${action} customer "${username}"?`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    // Set loading state for this specific customer
+    setStatusToggleLoading(prev => ({ ...prev, [username]: true }));
+
+    try {
+      await customerService.toggleCustomerStatus(username, !currentStatus);
+      alert(`Customer ${action}d successfully!`);
+      fetchData(); // Refresh the list to show updated status
+    } catch (error) {
+      console.error('Error toggling customer status:', error);
+      alert(`Failed to ${action} customer. Please try again.`);
+    } finally {
+      // Clear loading state for this customer
+      setStatusToggleLoading(prev => ({ ...prev, [username]: false }));
     }
   };
 
@@ -342,14 +372,38 @@ export default function CustomersPage() {
                       </div>
                     </td>
                     {/* Status */}
-                    <td className="px-2 py-4 whitespace-nowrap w-20 truncate">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        customer.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {customer.is_active ? 'Active' : 'Inactive'}
-                      </span>
+                    <td className="px-2 py-4 whitespace-nowrap w-32 truncate">
+                      <div className="flex flex-col space-y-1">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          (customer.is_active ?? false)
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {(customer.is_active ?? false) ? 'Active' : 'Inactive'}
+                        </span>
+                        <button
+                          onClick={() => handleToggleStatus(customer.username!, customer.is_active ?? false)}
+                          disabled={!customer.username || statusToggleLoading[customer.username!]}
+                          className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                            (customer.is_active ?? false)
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                              : 'bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                          }`}
+                          title={customer.username ? `Click to ${(customer.is_active ?? false) ? 'disable' : 'enable'} customer` : 'Username required to toggle status'}
+                        >
+                          {statusToggleLoading[customer.username!] ? (
+                            <span className="inline-flex items-center">
+                              <svg className="animate-spin -ml-1 mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Updating...
+                            </span>
+                          ) : (
+                            (customer.is_active ?? false) ? 'Disable' : 'Enable'
+                          )}
+                        </button>
+                      </div>
                     </td>
                     {/* Actions */}
                     <td className="px-2 py-4 whitespace-nowrap text-sm font-medium w-28 truncate">
