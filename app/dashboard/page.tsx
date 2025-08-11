@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Me, CustomerList, PaymentList } from '@/lib/types';
-import { authService, customerService, paymentService, packageService } from '@/lib/api-services';
+import { authService, customerService, paymentService } from '@/lib/api-services';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<Me | null>(null);
@@ -21,6 +21,7 @@ export default function DashboardPage() {
     totalPayments: 0,
     totalPackages: 0
   });
+  const [loadingRecent, setLoadingRecent] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,46 +33,41 @@ export default function DashboardPage() {
       }
 
       try {
-        const userData = await authService.getMe();
+        const userData = await authService.getCurrentUser();
         setUser(userData);
-        
+
         // Load data based on user role
         if (userData.kind === 'CUSTOMER') {
           // For customers, load their own data
           // You might need to implement customer-specific endpoints
         } else {
-          // For staff/admin, load all data
-          const [customersData, paymentsData, packagesData] = await Promise.all([
-            customerService.getCustomers(1, 10),
-            paymentService.getPayments(1, 30), // Get more payments for better stats
-            packageService.getPackages(1, 10)
-          ]);
-          
-          setCustomers(customersData.results);
-          setPayments(paymentsData.results);
-
-          // Calculate statistics using proper counts and comprehensive data
-          const totalRevenue = paymentsData.results.reduce((sum, payment) => {
-            return sum + (payment.paid ? parseFloat(payment.amount || '0') : 0);
-          }, 0);
-
-          const pendingPayments = paymentsData.results.filter(payment => !payment.paid).length;
-          const activeCustomers = customersData.results.filter(customer => customer.is_active).length;
-          
-          const currentMonth = new Date().toLocaleString('en-US', { month: 'long' }).toUpperCase();
-          const thisMonthPayments = paymentsData.results.filter(payment => 
-            payment.billing_month === currentMonth
-          ).length;
-
-          setStats({
-            totalRevenue,
-            pendingPayments,
-            activeCustomers,
-            thisMonthPayments,
-            totalCustomers: customersData.count,
-            totalPayments: paymentsData.count,
-            totalPackages: packagesData.count
+          // For staff/admin, load dashboard stats from new API
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/'}dashboard`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
           });
+          if (!response.ok) throw new Error('Failed to fetch dashboard stats');
+          const data = await response.json();
+          setStats({
+            totalRevenue: parseFloat(data.total_revenue || '0'),
+            pendingPayments: data.pending_payments || 0,
+            activeCustomers: data.active_customers || 0,
+            thisMonthPayments: data.current_month_payments || 0,
+            totalCustomers: data.total_customers || 0,
+            totalPayments: data.total_payments || 0,
+            totalPackages: data.total_packages || 0
+          });
+
+          // Step 2: Fetch recent customers and payments after stats are ready
+          setLoadingRecent(true);
+          Promise.all([
+            customerService.getCustomers(1, 5),
+            paymentService.getPayments(1, 5, { paid: true })
+          ]).then(([recentCustomers, recentPayments]) => {
+            setCustomers(recentCustomers.results);
+            setPayments(recentPayments.results);
+          }).finally(() => setLoadingRecent(false));
         }
       } catch (error) {
         console.error('Auth error:', error);
@@ -359,57 +355,63 @@ export default function DashboardPage() {
                     View all payments →
                   </Link>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill Amount</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {payments.map((payment) => (
-                        <tr key={payment.uid} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {payment.customer?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                            {formatCurrency(payment.bill_amount || '0')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                            {formatCurrency(payment.amount || '0')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <span className="flex items-center">
-                              <span className="mr-2">{getPaymentMethodIcon(payment.payment_method || '')}</span>
-                              {payment.payment_method?.replace('_', ' ') || 'N/A'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {payment.billing_month || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              payment.paid 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {payment.paid ? 'Paid' : 'Pending'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A'}
-                          </td>
+                {loadingRecent ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill Amount</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {payments.map((payment) => (
+                          <tr key={payment.uid} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {payment.customer?.name || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                              {formatCurrency(payment.bill_amount || '0')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                              {formatCurrency(payment.amount || '0')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <span className="flex items-center">
+                                <span className="mr-2">{getPaymentMethodIcon(payment.payment_method || '')}</span>
+                                {payment.payment_method?.replace('_', ' ') || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {payment.billing_month || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                payment.paid 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {payment.paid ? 'Paid' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -425,71 +427,77 @@ export default function DashboardPage() {
                     View all customers →
                   </Link>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connection</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {customers.map((customer) => (
-                        <tr key={customer.uid} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {customer.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {customer.phone}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div>
-                              <div className="font-medium">{customer.package?.name || 'N/A'}</div>
-                              <div className="text-xs text-gray-400">
-                                {customer.package?.speed_mbps} Mbps - {formatCurrency(customer.package?.price || '0')}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div>
-                              <div className="text-xs text-gray-400">IP: {customer.ip_address || 'N/A'}</div>
-                              <div className="text-xs text-gray-400">Type: {customer.connection_type || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              customer.is_active 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {customer.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex space-x-2">
-                              <Link
-                                href={`/customers/${customer.uid}`}
-                                className="text-indigo-600 hover:text-indigo-900"
-                              >
-                                View
-                              </Link>
-                              <Link
-                                href={`/customers/${customer.uid}/edit`}
-                                className="text-green-600 hover:text-green-900"
-                              >
-                                Edit
-                              </Link>
-                            </div>
-                          </td>
+                {loadingRecent ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connection</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {customers.map((customer) => (
+                          <tr key={customer.uid} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {customer.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {customer.phone}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div>
+                                <div className="font-medium">{customer.package?.name || 'N/A'}</div>
+                                <div className="text-xs text-gray-400">
+                                  {customer.package?.speed_mbps} Mbps - {formatCurrency(customer.package?.price || '0')}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div>
+                                <div className="text-xs text-gray-400">IP: {customer.ip_address || 'N/A'}</div>
+                                <div className="text-xs text-gray-400">Type: {customer.connection_type || 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                customer.is_active 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {customer.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <div className="flex space-x-2">
+                                <Link
+                                  href={`/customers/${customer.uid}`}
+                                  className="text-indigo-600 hover:text-indigo-900"
+                                >
+                                  View
+                                </Link>
+                                <Link
+                                  href={`/customers/${customer.uid}/edit`}
+                                  className="text-green-600 hover:text-green-900"
+                                >
+                                  Edit
+                                </Link>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>

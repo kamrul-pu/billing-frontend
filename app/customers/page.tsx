@@ -267,66 +267,43 @@ export default function CustomersPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Package
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Connection
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 truncate">Name</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 truncate">Contact</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 truncate">Address</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 truncate">Status</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28 truncate">Actions</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 truncate">Package</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCustomers.map((customer) => (
                   <tr key={customer.uid} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                        <div className="text-sm text-gray-500">ID: #{customer.id}</div>
+                    {/* Name (clickable) */}
+                    <td className="px-2 py-4 whitespace-nowrap w-32 truncate">
+                      <div className="truncate">
+                        <Link href={`/customers/${customer.uid}`} className="text-sm font-medium text-indigo-600 hover:underline truncate">
+                          {customer.name}
+                        </Link>
+                        <div className="text-sm text-gray-500 truncate">ID: #{customer.id}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">{customer.phone}</div>
-                        {customer.email && (
-                          <div className="text-sm text-gray-500">{customer.email}</div>
-                        )}
+                    {/* Contact */}
+                    <td className="px-2 py-4 whitespace-nowrap w-32 truncate">
+                      <div className="truncate">
+                        <div className="text-sm text-gray-900 truncate">{customer.phone}</div>
+                        {/* {customer.email && (
+                          <div className="text-sm text-gray-500 truncate">{customer.email}</div>
+                        )} */}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {customer.package?.name || 'No Package'}
-                        </div>
-                        {customer.package && (
-                          <div className="text-sm text-gray-500">
-                            {customer.package.speed_mbps} Mbps - {formatCurrency(customer.package.price || '0')}
-                          </div>
-                        )}
+                    {/* Address */}
+                    <td className="px-2 py-4 whitespace-nowrap w-40 truncate">
+                      <div className="truncate">
+                        <div className="text-sm text-gray-900 truncate">{customer.address || 'N/A'}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">
-                          {customer.connection_type || 'N/A'}
-                        </div>
-                        {customer.ip_address && (
-                          <div className="text-sm text-gray-500">IP: {customer.ip_address}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Status */}
+                    <td className="px-2 py-4 whitespace-nowrap w-20 truncate">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         customer.is_active 
                           ? 'bg-green-100 text-green-800' 
@@ -335,14 +312,9 @@ export default function CustomersPage() {
                         {customer.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {/* Actions */}
+                    <td className="px-2 py-4 whitespace-nowrap text-sm font-medium w-28 truncate">
                       <div className="flex space-x-2">
-                        <Link
-                          href={`/customers/${customer.uid}`}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          View
-                        </Link>
                         <Link
                           href={`/customers/${customer.uid}/edit`}
                           className="text-green-600 hover:text-green-900"
@@ -355,6 +327,19 @@ export default function CustomersPage() {
                         >
                           Delete
                         </button>
+                      </div>
+                    </td>
+                    {/* Package */}
+                    <td className="px-2 py-4 whitespace-nowrap w-32 truncate">
+                      <div className="truncate">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {customer.package?.name || 'N/A'}
+                        </div>
+                        {customer.package && (
+                          <div className="text-sm text-gray-500 truncate">
+                            {customer.package.speed_mbps} Mbps - {formatCurrency(customer.package.price || '0')}
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
