@@ -42,7 +42,7 @@ export default function DashboardPage() {
           // You might need to implement customer-specific endpoints
         } else {
           // For staff/admin, load dashboard stats from new API
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1/'} dashboard`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/dashboard`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
             }
