@@ -91,6 +91,7 @@ export interface CustomerBase {
   phone: string;
   address?: string;
   nid?: string;
+  is_free?: boolean;
 }
 
 export interface CustomerList extends CustomerBase {

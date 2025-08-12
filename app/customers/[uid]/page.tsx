@@ -293,7 +293,7 @@ export default function CustomerDetailPage() {
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-medium text-gray-900">Account Status</h3>
               </div>
-              <div className="px-6 py-4">
+              <div className="px-6 py-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Status</span>
                   <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
@@ -304,7 +304,17 @@ export default function CustomerDetailPage() {
                     {customer.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div className="mt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Service Type</span>
+                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                    customer.is_free 
+                      ? 'bg-purple-100 text-purple-800' 
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {customer.is_free ? 'Free Service' : 'Paid Service'}
+                  </span>
+                </div>
+                <div>
                   <span className="text-sm text-gray-500">Connection Start</span>
                   <p className="mt-1 text-sm text-gray-900">
                     {customer.connection_start_date ? formatDate(customer.connection_start_date) : 'Not set'}

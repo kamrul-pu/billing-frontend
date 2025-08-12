@@ -8,11 +8,13 @@ import { customerService, packageService } from '@/lib/api-services';
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerList[]>([]);
   const [packages, setPackages] = useState<PackageList[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [statusToggleLoading, setStatusToggleLoading] = useState<Record<string, boolean>>({});
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   // Filter states
   const [nameFilter, setNameFilter] = useState('');
@@ -20,6 +22,7 @@ export default function CustomersPage() {
   const [usernameFilter, setUsernameFilter] = useState('');
   const [packageFilter, setPackageFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [freeServiceFilter, setFreeServiceFilter] = useState<'all' | 'free' | 'paid'>('all');
   
   // Applied filters (what's actually being used for search)
   const [appliedFilters, setAppliedFilters] = useState({
@@ -27,16 +30,39 @@ export default function CustomersPage() {
     phone: '',
     username: '',
     package_id: 'all' as string | number,
-    is_active: 'all' as string | boolean
+    is_active: 'all' as string | boolean,
+    is_free: 'all' as string | boolean
   });
 
+  // Initial load - only run once
   useEffect(() => {
-    fetchData();
-  }, [currentPage, pageSize, appliedFilters]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!initialLoadComplete) {
+      setLoading(true);
+      Promise.all([
+        packageService.getPackages(1, 100), // Get all packages for filter
+        fetchData()
+      ]).finally(() => {
+        setInitialLoadComplete(true);
+        setLoading(false);
+      });
+    }
+  }, [initialLoadComplete]);
+
+  // Fetch data when filters or pagination changes
+  useEffect(() => {
+    if (initialLoadComplete) {
+      fetchData();
+    }
+  }, [currentPage, pageSize, appliedFilters, initialLoadComplete]);
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      // Use paginationLoading for page changes, full loading for initial load
+      if (initialLoadComplete) {
+        setPaginationLoading(true);
+      } else {
+        setLoading(true);
+      }
       
       // Build filters object from applied filters
       const filters: {
@@ -45,25 +71,24 @@ export default function CustomersPage() {
         username?: string;
         package_id?: number;
         is_active?: boolean;
+        is_free?: boolean;
       } = {};
       if (appliedFilters.name.trim()) filters.name = appliedFilters.name.trim();
       if (appliedFilters.phone.trim()) filters.phone = appliedFilters.phone.trim();
       if (appliedFilters.username.trim()) filters.username = appliedFilters.username.trim();
       if (appliedFilters.package_id !== 'all') filters.package_id = parseInt(appliedFilters.package_id as string);
       if (appliedFilters.is_active !== 'all') filters.is_active = appliedFilters.is_active === 'active';
+      if (appliedFilters.is_free !== 'all') filters.is_free = appliedFilters.is_free === 'free';
       
-      const [customersData, packagesData] = await Promise.all([
-        customerService.getCustomers(currentPage, pageSize, filters),
-        packageService.getPackages(1, 100) // Get all packages for filter
-      ]);
+      const customersData = await customerService.getCustomers(currentPage, pageSize, filters);
       
       setCustomers(customersData.results);
       setTotalCount(customersData.count);
-      setPackages(packagesData.results);
     } catch (error: unknown) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+      setPaginationLoading(false);
     }
   };
 
@@ -92,7 +117,8 @@ export default function CustomersPage() {
       phone: phoneFilter,
       username: usernameFilter,
       package_id: packageFilter,
-      is_active: statusFilter
+      is_active: statusFilter,
+      is_free: freeServiceFilter
     });
     setCurrentPage(1); // Reset to first page when searching
   };
@@ -103,12 +129,14 @@ export default function CustomersPage() {
     setUsernameFilter('');
     setPackageFilter('all');
     setStatusFilter('all');
+    setFreeServiceFilter('all');
     setAppliedFilters({
       name: '',
       phone: '',
       username: '',
       package_id: 'all',
-      is_active: 'all'
+      is_active: 'all',
+      is_free: 'all'
     });
     setCurrentPage(1);
   };
@@ -200,7 +228,7 @@ export default function CustomersPage() {
         {/* Search and Filters */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-9 gap-4">
               {/* Name Filter */}
               <div>
                 <label htmlFor="name-filter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -286,6 +314,23 @@ export default function CustomersPage() {
                 </select>
               </div>
 
+              {/* Free Service Filter */}
+              <div>
+                <label htmlFor="free-service-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Type
+                </label>
+                <select
+                  id="free-service-filter"
+                  value={freeServiceFilter}
+                  onChange={(e) => setFreeServiceFilter(e.target.value as 'all' | 'free' | 'paid')}
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="free">Free Service</option>
+                  <option value="paid">Paid Service</option>
+                </select>
+              </div>
+
               {/* Page Size Selector */}
               <div>
                 <label htmlFor="page-size" className="block text-sm font-medium text-gray-700 mb-1">
@@ -332,6 +377,15 @@ export default function CustomersPage() {
 
         {/* Customers Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
+          {/* Pagination Loading Indicator */}
+          {paginationLoading && (
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+              <div className="flex items-center text-blue-700 text-sm">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading page {currentPage}...
+              </div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -342,6 +396,7 @@ export default function CustomersPage() {
                   <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 truncate">Status</th>
                   <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28 truncate">Actions</th>
                   <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 truncate">Package</th>
+                  <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 truncate">Type</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -435,6 +490,16 @@ export default function CustomersPage() {
                         )}
                       </div>
                     </td>
+                    {/* Service Type */}
+                    <td className="px-2 py-4 whitespace-nowrap w-20 truncate">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        (customer.is_free ?? false)
+                          ? 'bg-purple-100 text-purple-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {(customer.is_free ?? false) ? 'Free' : 'Paid'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -449,7 +514,7 @@ export default function CustomersPage() {
               </svg>
               <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {nameFilter || phoneFilter || packageFilter !== 'all' || statusFilter !== 'all' 
+                {nameFilter || phoneFilter || packageFilter !== 'all' || statusFilter !== 'all' || freeServiceFilter !== 'all'
                   ? 'Try adjusting your search or filter criteria.' 
                   : 'Get started by creating a new customer.'}
               </p>
