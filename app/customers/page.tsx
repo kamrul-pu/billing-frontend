@@ -38,13 +38,16 @@ export default function CustomersPage() {
   useEffect(() => {
     if (!initialLoadComplete) {
       setLoading(true);
-      Promise.all([
-        packageService.getPackages(1, 100), // Get all packages for filter
-        fetchData()
-      ]).finally(() => {
-        setInitialLoadComplete(true);
-        setLoading(false);
-      });
+      packageService.getPackages(1, 100)
+        .then((pkgRes) => {
+          setPackages(pkgRes.results || []);
+        })
+        .finally(() => {
+          fetchData().finally(() => {
+            setInitialLoadComplete(true);
+            setLoading(false);
+          });
+        });
     }
   }, [initialLoadComplete]);
 
