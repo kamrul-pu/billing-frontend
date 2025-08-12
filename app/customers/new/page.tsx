@@ -21,7 +21,8 @@ export default function NewCustomerPage() {
     password: '',
     connection_type: 'DHCP' as 'DHCP' | 'STATIC' | 'PPPoE',
     credentials: '',
-    is_active: true
+    is_active: true,
+    is_free: false
   });
   const [loading, setLoading] = useState(false);
   const [packagesLoading, setPackagesLoading] = useState(true);
@@ -126,7 +127,8 @@ export default function NewCustomerPage() {
         password: formData.password.trim(),
         connection_type: formData.connection_type,
         credentials: formData.credentials ? JSON.parse(formData.credentials) : undefined,
-        is_active: formData.is_active
+        is_active: formData.is_active,
+        is_free: formData.is_free
       });
       
       router.push('/customers');
@@ -456,7 +458,8 @@ export default function NewCustomerPage() {
               {/* Customer Status */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Status</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                  {/* Account Status */}
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-medium text-gray-700">Account Status</h4>
@@ -474,6 +477,29 @@ export default function NewCustomerPage() {
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                         <span className="ml-3 text-sm font-medium text-gray-900">
                           {formData.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Free Service Status */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700">Free Service</h4>
+                      <p className="text-sm text-gray-500">Mark this customer as receiving free service (no billing)</p>
+                    </div>
+                    <div className="flex items-center">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="is_free"
+                          checked={formData.is_free}
+                          onChange={(e) => setFormData(prev => ({ ...prev, is_free: e.target.checked }))}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-900">
+                          {formData.is_free ? 'Free Service' : 'Paid Service'}
                         </span>
                       </label>
                     </div>
