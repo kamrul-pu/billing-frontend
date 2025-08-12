@@ -8,11 +8,13 @@ import { customerService, packageService } from '@/lib/api-services';
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerList[]>([]);
   const [packages, setPackages] = useState<PackageList[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [statusToggleLoading, setStatusToggleLoading] = useState<Record<string, boolean>>({});
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   // Filter states
   const [nameFilter, setNameFilter] = useState('');
@@ -32,13 +34,35 @@ export default function CustomersPage() {
     is_free: 'all' as string | boolean
   });
 
+  // Initial load - only run once
   useEffect(() => {
-    fetchData();
-  }, [currentPage, pageSize, appliedFilters]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!initialLoadComplete) {
+      setLoading(true);
+      Promise.all([
+        packageService.getPackages(1, 100), // Get all packages for filter
+        fetchData()
+      ]).finally(() => {
+        setInitialLoadComplete(true);
+        setLoading(false);
+      });
+    }
+  }, [initialLoadComplete]);
+
+  // Fetch data when filters or pagination changes
+  useEffect(() => {
+    if (initialLoadComplete) {
+      fetchData();
+    }
+  }, [currentPage, pageSize, appliedFilters, initialLoadComplete]);
 
   const fetchData = async () => {
     try {
-      setLoading(true);
+      // Use paginationLoading for page changes, full loading for initial load
+      if (initialLoadComplete) {
+        setPaginationLoading(true);
+      } else {
+        setLoading(true);
+      }
       
       // Build filters object from applied filters
       const filters: {
@@ -56,18 +80,15 @@ export default function CustomersPage() {
       if (appliedFilters.is_active !== 'all') filters.is_active = appliedFilters.is_active === 'active';
       if (appliedFilters.is_free !== 'all') filters.is_free = appliedFilters.is_free === 'free';
       
-      const [customersData, packagesData] = await Promise.all([
-        customerService.getCustomers(currentPage, pageSize, filters),
-        packageService.getPackages(1, 100) // Get all packages for filter
-      ]);
+      const customersData = await customerService.getCustomers(currentPage, pageSize, filters);
       
       setCustomers(customersData.results);
       setTotalCount(customersData.count);
-      setPackages(packagesData.results);
     } catch (error: unknown) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+      setPaginationLoading(false);
     }
   };
 
@@ -356,6 +377,15 @@ export default function CustomersPage() {
 
         {/* Customers Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
+          {/* Pagination Loading Indicator */}
+          {paginationLoading && (
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+              <div className="flex items-center text-blue-700 text-sm">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading page {currentPage}...
+              </div>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">

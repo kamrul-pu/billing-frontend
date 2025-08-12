@@ -7,19 +7,41 @@ import { packageService } from '@/lib/api-services';
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState<PackageList[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
+  // Initial load - only run once
   useEffect(() => {
-    fetchPackages();
-  }, [currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!initialLoadComplete) {
+      setLoading(true);
+      fetchPackages().finally(() => {
+        setInitialLoadComplete(true);
+        setLoading(false);
+      });
+    }
+  }, [initialLoadComplete]);
+
+  // Fetch data when pagination changes
+  useEffect(() => {
+    if (initialLoadComplete) {
+      fetchPackages();
+    }
+  }, [currentPage, pageSize, initialLoadComplete]);
 
   const fetchPackages = async () => {
     try {
-      setLoading(true);
+      // Use paginationLoading for page changes, full loading for initial load
+      if (initialLoadComplete) {
+        setPaginationLoading(true);
+      } else {
+        setLoading(true);
+      }
+      
       const response = await packageService.getPackages(currentPage, pageSize);
       setPackages(response.results);
       setTotalCount(response.count);
@@ -27,6 +49,7 @@ export default function PackagesPage() {
       console.error('Error fetching packages:', error);
     } finally {
       setLoading(false);
+      setPaginationLoading(false);
     }
   };
 
@@ -136,6 +159,16 @@ export default function PackagesPage() {
             </div>
           </div>
         </div>
+
+        {/* Pagination Loading Indicator */}
+        {paginationLoading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-6">
+            <div className="flex items-center text-blue-700 text-sm">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+              Loading page {currentPage}...
+            </div>
+          </div>
+        )}
 
         {/* Packages Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
