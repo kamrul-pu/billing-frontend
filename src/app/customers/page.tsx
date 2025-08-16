@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/Button";
@@ -24,7 +24,7 @@ export default function CustomersPage() {
   const [connectionTypeFilter, setConnectionTypeFilter] = useState<string>("all");
   const [packageFilter, setPackageFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(20);
   
   // State for actual filter values (used in API calls)
   const [activeNameFilter, setActiveNameFilter] = useState("");
@@ -59,6 +59,13 @@ export default function CustomersPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [search, activeNameFilter, activePhoneFilter, activeUsernameFilter, isActiveFilter, isFreeFilter, connectionTypeFilter, packageFilter]);
+
+  // Handle all filters submission at once
+  const handleAllFiltersSubmit = () => {
+    setActiveNameFilter(nameFilter);
+    setActivePhoneFilter(phoneFilter);
+    setActiveUsernameFilter(usernameFilter);
+  };
 
   // Handle filter submission on Enter key
   const handleFilterSubmit = (filterType: 'name' | 'phone' | 'username') => {
@@ -167,42 +174,96 @@ export default function CustomersPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* General Search */}
+                {/* <div className="mb-6">
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">Quick Search</label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search customers by name, phone, or username..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          // Search is already triggered by state change
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={() => {
+                        // Trigger search by clearing and resetting to force re-render
+                        const currentSearch = search;
+                        setSearch('');
+                        setTimeout(() => setSearch(currentSearch), 10);
+                      }}
+                      className="px-4"
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div> */}
+                
                 {/* Individual Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Name Filter */}
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 mb-1 block">Name</label>
-                    <Input
-                      placeholder="Filter by name (press Enter)"
-                      value={nameFilter}
-                      onChange={(e) => setNameFilter(e.target.value)}
-                      onKeyPress={(e) => handleFilterKeyPress(e, 'name')}
-                      className="text-sm"
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Name Filter */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-700 mb-1 block">Name</label>
+                      <Input
+                        placeholder="Filter by name"
+                        value={nameFilter}
+                        onChange={(e) => setNameFilter(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAllFiltersSubmit();
+                          }
+                        }}
+                        className="text-sm"
+                      />
+                    </div>
+                    
+                    {/* Phone Filter */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-700 mb-1 block">Phone</label>
+                      <Input
+                        placeholder="Filter by phone"
+                        value={phoneFilter}
+                        onChange={(e) => setPhoneFilter(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAllFiltersSubmit();
+                          }
+                        }}
+                        className="text-sm"
+                      />
+                    </div>
+                    
+                    {/* Username Filter */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-700 mb-1 block">Username</label>
+                      <Input
+                        placeholder="Filter by username"
+                        value={usernameFilter}
+                        onChange={(e) => setUsernameFilter(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAllFiltersSubmit();
+                          }
+                        }}
+                        className="text-sm"
+                      />
+                    </div>
                   </div>
                   
-                  {/* Phone Filter */}
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 mb-1 block">Phone</label>
-                    <Input
-                      placeholder="Filter by phone (press Enter)"
-                      value={phoneFilter}
-                      onChange={(e) => setPhoneFilter(e.target.value)}
-                      onKeyPress={(e) => handleFilterKeyPress(e, 'phone')}
-                      className="text-sm"
-                    />
-                  </div>
-                  
-                  {/* Username Filter */}
-                  <div>
-                    <label className="text-xs font-medium text-gray-700 mb-1 block">Username</label>
-                    <Input
-                      placeholder="Filter by username (press Enter)"
-                      value={usernameFilter}
-                      onChange={(e) => setUsernameFilter(e.target.value)}
-                      onKeyPress={(e) => handleFilterKeyPress(e, 'username')}
-                      className="text-sm"
-                    />
+                  {/* Search Button for Filters */}
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleAllFiltersSubmit}
+                      className="px-8"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Search
+                    </Button>
                   </div>
                 </div>
                 
@@ -516,10 +577,10 @@ export default function CustomersPage() {
 
               {/* Pagination */}
               {data && data.count > 0 && (
-                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200">
+                  {/* Mobile-first pagination info and controls */}
+                  <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700">Show:</span>
                       <select
                         value={pageSize}
                         onChange={(e) => {
@@ -529,29 +590,33 @@ export default function CustomersPage() {
                         className="text-sm border border-gray-300 rounded-md px-2 py-1"
                       >
                         <option value={10}>10</option>
+                        <option value={20}>20</option>
                         <option value={25}>25</option>
                         <option value={50}>50</option>
                         <option value={100}>100</option>
                       </select>
-                      <span className="text-sm text-gray-700">per page</span>
+                      <span className="text-sm text-gray-700 hidden sm:inline">per page</span>
                     </div>
-                    <span className="text-sm text-gray-700">
-                      Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, data.count)} of {data.count} results
+                    <span className="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
+                      {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, data.count)} of {data.count}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  {/* Navigation controls */}
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(currentPage - 1)}
                       disabled={!hasPreviousPage}
+                      className="px-2 sm:px-3"
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Previous
+                      <span className="hidden sm:inline ml-1">Prev</span>
                     </Button>
                     
-                    <div className="flex items-center gap-1">
+                    {/* Page numbers - hidden on mobile if more than 3 pages */}
+                    <div className="hidden sm:flex items-center gap-1">
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         let pageNum;
                         if (totalPages <= 5) {
@@ -578,13 +643,19 @@ export default function CustomersPage() {
                       })}
                     </div>
                     
+                    {/* Mobile page info */}
+                    <div className="sm:hidden flex items-center px-2 py-1 text-sm text-gray-600 border border-gray-300 rounded">
+                      {currentPage} / {totalPages}
+                    </div>
+                    
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(currentPage + 1)}
                       disabled={!hasNextPage}
+                      className="px-2 sm:px-3"
                     >
-                      Next
+                      <span className="hidden sm:inline mr-1">Next</span>
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
